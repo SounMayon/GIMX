@@ -23,6 +23,16 @@ jobs:
             libwxgtk3.2-dev libsdl2-dev libxml2-dev libusb-1.0-0-dev \
             libbluetooth-dev libncurses-dev libmhash-dev \
             libcurl4-openssl-dev libxi-dev libx11-dev xterm xdg-utils
+      - name: Record toolchain and library versions
+        run: |
+          gcc --version | head -n1
+          g++ --version | head -n1
+          wx-config --version
+          for package in sdl2 libxml-2.0 libusb-1.0 ncursesw libcurl; do
+            printf '%s ' "$package"
+            pkg-config --modversion "$package"
+          done
+          dpkg-query -W -f='${binary:Package} ${Version}\n' libbluetooth-dev libmhash-dev libxi-dev libx11-dev
       - name: Apply downstream shared HID fix
         run: git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
       - name: Apply downstream shared USB fix
