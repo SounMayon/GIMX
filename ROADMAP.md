@@ -46,11 +46,11 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 
 ### G29 PS4 emulation
 
-- The firmware descriptor advertises Logitech `046d:C260`, HID input and output reports, and relays control/feature requests through the adapter serial protocol.
-- The application already registers a G29 PS4 controller, builds the wheel/pedal/button report, requires authentication and sends reports at a 5 ms default interval.
-- The GIMX core handles output reports and has a haptics path; the wiki documents G29 PS4 emulation and force feedback. This is an existing emulation chain to validate and improve, not an empty firmware project.
-- The firmware's `F1/F2` feature-request handling waits in a loop for a serial reply without a timeout. Treat this as a robustness risk; protocol changes require real-device captures and PS4 validation.
-- Candidate work after build baselines: report-size/value checks, bounded UART/control lengths, timeout/recovery design, report unit tests, USB capture comparisons, reconnect behavior and real G29/adapter/console force-feedback checks.
+- The firmware descriptor advertises Logitech `046d:C260` and interrupt input/output endpoints in [Descriptors.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/Descriptors.c#L95-L105).
+- The firmware handles HID feature requests `F1/F2` in [emu.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/emu.c#L32-L45), sends a serial header and spins until `spoofReply` arrives. There is no timeout or recovery path, so a lost reply can stall that request.
+- The application already registers a G29 PS4 controller, builds wheel/pedal/button reports, handles authentication and sends reports at a 5 ms default interval.
+- GIMX's guide documents working wheel, pedal, wheel-button and shifter controls, combined input devices, and force feedback; the GIMX path is an existing G29 emulator that needs validation and robustness work. See the [G29 to PS4 guide](https://gimx.fr/wiki/index.php?connectiontype=USB&device=SteeringWheel&ostype=windows&platform=ps4&title=Guide) and [force feedback notes](https://gimx.fr/wiki/index.php?title=Force_Feedback).
+- Highest-value additions: bound control/serial lengths, add a timeout and recoverable error path for `F1/F2`, test report boundaries and reconnect behavior, compare descriptors/reports with a genuine G29 capture, then validate authentication and force feedback on a real G29, adapter and PS4. Do not change framing or timing without captures and hardware validation.
 - Firmware baseline used bundled LUFA `130901`. After both baseline builds passed, only the G29 target was switched to the pinned upstream `LUFA-170418` submodule. Its build passes with the descriptor callback updated to LUFA's `uint16_t wIndex` signature; other firmware targets still use the existing shared LUFA tree.
 
 ## Next steps
