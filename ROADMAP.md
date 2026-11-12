@@ -22,6 +22,7 @@ Last updated: 2026-11-12
 ### In progress
 
 - Audit the exact dependency versions resolved by Ubuntu 26.04 and identify any separately vendored libraries that can be upgraded safely.
+- The G29 firmware branch now pins upstream LUFA `LUFA-170418`; its first compile exposed the descriptor callback's old `uint8_t` index type. The signature has been updated and the new build is being checked.
 - Check whether the Windows/MSYS2 build can use a current supported toolchain.
 - Keep protocol and firmware behavior changes separate from dependency updates so each step can be compiled and reviewed.
 
@@ -46,7 +47,7 @@ The Ubuntu 26.04 Linux application build is green. The Windows/MSYS2 build has n
 - The GIMX core handles output reports and has a haptics path; the wiki documents G29 PS4 emulation and force feedback. This is an existing emulation chain to validate and improve, not an empty firmware project.
 - The firmware's `F1/F2` feature-request handling waits in a loop for a serial reply without a timeout. Treat this as a robustness risk; protocol changes require real-device captures and PS4 validation.
 - Candidate work after build baselines: report-size/value checks, bounded UART/control lengths, timeout/recovery design, report unit tests, USB capture comparisons, reconnect behavior and real G29/adapter/console force-feedback checks.
-- Vendored LUFA is currently version `130901`. Updating it is deferred until both baseline builds are green; the candidate stable release is `LUFA-170418`.
+- Firmware baseline used bundled LUFA `130901`. After both baseline builds passed, the G29 target was switched to a pinned upstream `LUFA-170418` submodule; its CI build is in progress after aligning the descriptor callback signature.
 
 ## Next steps
 
