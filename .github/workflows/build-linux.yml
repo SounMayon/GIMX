@@ -1,0 +1,25 @@
+name: Linux build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install current Ubuntu development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential pkg-config git gettext \
+            libwxgtk3.2-dev libsdl2-dev libxml2-dev libusb-1.0-0-dev \
+            libbluetooth-dev libncurses-dev libmhash-dev \
+            libcurl4-openssl-dev libxi-dev libx11-dev xterm xdg-utils
+      - name: Build
+        run: make -j2
