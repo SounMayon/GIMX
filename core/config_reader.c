@@ -4,6 +4,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include "config_reader.h"
 #include <xml_defs.h>
 #include "config.h"
