@@ -22,6 +22,6 @@ typedef struct
 } s_bt_device_abs;
 
 void bt_device_abs_register(e_bt_abs index, s_bt_device_abs * value);
-s_bt_device_abs * bt_device_abs_get();
+s_bt_device_abs * bt_device_abs_get(void);
 
 #endif /* BT_DEVICE_ABS_H_ */
