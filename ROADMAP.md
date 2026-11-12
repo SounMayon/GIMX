@@ -1,6 +1,6 @@
 # Roadmap: GIMX Reborn and G29 PS4 emulation
 
-Last updated: 2026-11-12
+Last updated: 2026-11-13
 
 ## Scope and current branches
 
