@@ -919,7 +919,7 @@ static void adapter_close(int i)
   }
 }
 
-e_gimx_status adapter_detect()
+e_gimx_status adapter_detect(void)
 {
   e_gimx_status ret = E_GIMX_STATUS_SUCCESS;
   int i;
