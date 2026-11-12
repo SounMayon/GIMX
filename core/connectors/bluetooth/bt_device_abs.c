@@ -10,7 +10,7 @@
 
 static s_bt_device_abs * bt_device_abs[E_BT_ABS_MAX] = {};
 
-s_bt_device_abs * bt_device_abs_get()
+s_bt_device_abs * bt_device_abs_get(void)
 {
   return bt_device_abs[bt_abs_value];
 }
