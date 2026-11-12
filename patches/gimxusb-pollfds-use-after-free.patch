@@ -1,0 +1,19 @@
+diff --git a/src/gusb.c b/src/gusb.c
+--- a/src/gusb.c
++++ b/src/gusb.c
+@@ -1275,13 +1275,14 @@ static int set_notifiers(struct gusb_device * device, libusb_context * ctx) {
+-    free(pollfds);
+ 
+     if (ret == -1) {
+         // roll-back
+         for (i = i - 1; i >= 0; --i) {
+             pollfd_remove(device, pollfds[i]->fd);
+         }
+         libusb_set_pollfd_notifiers(ctx, NULL, NULL, NULL);
++        free(pollfds);
+         return -1;
+     }
+ 
++    free(pollfds);
+     return 0;
+ }
