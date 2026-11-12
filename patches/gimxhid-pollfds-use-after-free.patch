@@ -1,15 +1,12 @@
 diff --git a/src/libusb/gusbhid.c b/src/libusb/gusbhid.c
 --- a/src/libusb/gusbhid.c
 +++ b/src/libusb/gusbhid.c
-@@ -856,16 +856,17 @@ static int set_notifiers(struct ghid_device * device, libusb_context * ctx) {
-     for (i = 0; pollfds[i] != NULL && ret != -1; ++i) {
-       ret = pollfd_register(device, pollfds[i]->fd, pollfds[i]->events);
-     }
+@@ -856,13 +856,14 @@ static int set_notifiers(struct ghid_device * device, libusb_context * ctx) {
 -    free(pollfds);
  
      if (ret == -1) {
          // roll-back
-@@ -865,9 +865,10 @@ static int set_notifiers(struct ghid_device * device, libusb_context * ctx) {
+         for (i = i - 1; i >= 0; --i) {
              pollfd_remove(device, pollfds[i]->fd);
          }
          libusb_set_pollfd_notifiers(ctx, NULL, NULL, NULL);
