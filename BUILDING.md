@@ -12,6 +12,11 @@ sudo apt-get install --yes \
   libbluetooth-dev libncurses-dev libmhash-dev \
   libcurl4-openssl-dev libxi-dev libx11-dev xterm xdg-utils
 git submodule update --init --recursive
+
+# Apply the branch-maintained fixes to the pinned shared submodules.
+git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
+git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
+
 make -j2
 ```
 
