@@ -23,5 +23,7 @@ jobs:
             libwxgtk3.2-dev libsdl2-dev libxml2-dev libusb-1.0-0-dev \
             libbluetooth-dev libncurses-dev libmhash-dev \
             libcurl4-openssl-dev libxi-dev libx11-dev xterm xdg-utils
+      - name: Apply downstream shared HID fix
+        run: git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
       - name: Build
         run: make -j2
