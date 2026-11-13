@@ -1,0 +1,46 @@
+diff --git a/src/sdl/sdlinput.c b/src/sdl/sdlinput.c
+--- a/src/sdl/sdlinput.c
++++ b/src/sdl/sdlinput.c
+@@ -161,13 +161,13 @@
+                     break;
+                 case SDL_HAPTIC_CONSTANT:
+                     effect.constant.length = SDL_HAPTIC_INFINITY;
+-                    effect.constant.direction.type = SDL_HAPTIC_FIRST_AXIS;
++                    effect.constant.direction.type = SDL_HAPTIC_STEERING_AXIS;
+                     effect.constant.direction.dir[0] = 0;
+                     break;
+                 case SDL_HAPTIC_SPRING:
+                 case SDL_HAPTIC_DAMPER:
+                     effect.condition.length = SDL_HAPTIC_INFINITY;
+-                    effect.condition.direction.type = SDL_HAPTIC_FIRST_AXIS;
++                    effect.condition.direction.type = SDL_HAPTIC_STEERING_AXIS;
+                     effect.condition.direction.dir[0] = 0;
+                     break;
+                 case SDL_HAPTIC_SINE:
+@@ -918,7 +918,7 @@
+         if (effects & GE_HAPTIC_CONSTANT) {
+             effect_id = get_effect_id(joystick, GE_HAPTIC_CONSTANT);
+             effect.constant.type = SDL_HAPTIC_CONSTANT;
+-            effect.constant.direction.type = SDL_HAPTIC_FIRST_AXIS;
++            effect.constant.direction.type = SDL_HAPTIC_STEERING_AXIS;
+             effect.constant.direction.dir[0] = 0;
+             effect.constant.length = SDL_HAPTIC_INFINITY;
+             effect.constant.level = event->jconstant.level;
+@@ -928,7 +928,7 @@
+         if (effects & GE_HAPTIC_SPRING) {
+             effect_id = get_effect_id(joystick, GE_HAPTIC_SPRING);
+             effect.condition.type = SDL_HAPTIC_SPRING;
+-            effect.condition.direction.type = SDL_HAPTIC_FIRST_AXIS;
++            effect.condition.direction.type = SDL_HAPTIC_STEERING_AXIS;
+             effect.condition.direction.dir[0] = 0;
+             effect.condition.length = SDL_HAPTIC_INFINITY;
+             effect.condition.right_sat[0] = event->jcondition.saturation.right;
+@@ -943,7 +943,7 @@
+         if (effects & GE_HAPTIC_DAMPER) {
+             effect_id = get_effect_id(joystick, GE_HAPTIC_DAMPER);
+             effect.condition.type = SDL_HAPTIC_DAMPER;
+-            effect.condition.direction.type = SDL_HAPTIC_FIRST_AXIS;
++            effect.condition.direction.type = SDL_HAPTIC_STEERING_AXIS;
+             effect.condition.direction.dir[0] = 0;
+             effect.condition.length = SDL_HAPTIC_INFINITY;
+             effect.condition.right_sat[0] = event->jcondition.saturation.right;

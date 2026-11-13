@@ -37,6 +37,7 @@ Apply the maintained shared-submodule fixes, then compile:
     git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
     git -C shared/gimxprio apply ../../patches/gimxprio-pointer-format.patch
     git -C shared/gimxtime apply ../../patches/gimxtime-standard-printf.patch
+    git -C shared/gimxinput apply ../../patches/gimxinput-sdl2-steering-axis.patch
     make clean
     make -j2
 
