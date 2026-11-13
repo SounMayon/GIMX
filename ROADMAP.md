@@ -112,8 +112,8 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 
 | Step | Result | State |
 |---|---|---|
-| Route ODrive Wheel VID/PID 1209:0D40 through GIMX's Logitech output sink, with a dedicated HID report ID carrying the unchanged seven-byte Logitech command | Firmware and application bridge transport | Implementing |
-| Convert native constant, spring, damper, and non-ramping variable reports into ODrive force effects; reserve four firmware effect slots for Logitech slots | Firmware parser and effect-engine path | Implementing |
+| Route ODrive Wheel VID/PID 1209:0D40 through GIMX's Logitech output sink, with a dedicated HID report ID carrying the unchanged seven-byte Logitech command | Firmware and application bridge transport | Implemented; Linux and Windows compile passed (runs [43352898991](https://github.com/SounMayon/GIMX/actions/runs/43352898991), [43352898973](https://github.com/SounMayon/GIMX/actions/runs/43352898973)) |
+| Convert native constant, spring, damper, and non-ramping variable reports into ODrive force effects; reserve four firmware effect slots for Logitech slots | Firmware parser and effect-engine path | Code committed; ODrive firmware build pending ([run 43353355296](https://github.com/SounMayon/Odrive-Wheel/actions/runs/43353355296)) |
 | Convert timed variable, periodic/waveform, trapezoid, rectangle, auto-center, friction, default-spring and multi-slot semantics | Full native G29 effect coverage | Planned |
 | Advertise and implement the complete PC PID 1.0 effect set, including custom force samples, and ensure Windows programs enumerate and operate every effect | PC detection and simulation | Planned |
 | Build GIMX Linux/Windows and ODrive firmware in GitHub Actions for each implementation increment | Compile verification | In progress |
