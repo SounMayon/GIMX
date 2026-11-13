@@ -10,9 +10,9 @@ Last updated: 2026-11-13
 
 ## Final acceptance goal: G29 FFB on PC
 
-The emulated G29 must enumerate on a PC as a force-feedback device. FFB test software must discover each supported effect type, create/configure it, start and stop it, and produce the expected force on a physical wheel connected through GIMX. Merely advertising an effect in the descriptor does not count as support.
+The emulated wheel must enumerate on a PC as a force-feedback device. FFB test software must discover every target effect, create/configure it, start and stop it, and produce the expected force on a physical wheel connected through GIMX. Merely advertising an effect in the descriptor does not count as support.
 
-The target effect set follows USB HID PID 1.0: constant, ramp, custom force, square, sine, triangle, sawtooth up/down, spring, damper, inertia and friction. Validate discovery and commands with Windows DirectInput/GameInput tools, then verify the resulting force on the connected physical wheel. Keep the existing PS4 target as a separate regression path.
+Use the USB HID PID 1.0 effect set as the coverage target: constant, ramp, custom force, square, sine, triangle, sawtooth up/down, spring, damper, inertia and friction. Microsoft's GameInput HID force-feedback path aligns with PID 1.0. Logitech documents the real G29's PC-mode identity as VID/PID 046D:C24F. Before implementation, verify whether Windows test software accepts PID reports with that identity or requires Logitech's native report protocol. Test discovery and commands with Windows DirectInput/GameInput tools, then confirm the expected force reaches the connected physical wheel. Keep the existing PS4 target as a separate regression path.
 
 ## Progress
 
@@ -30,7 +30,8 @@ The target effect set follows USB HID PID 1.0: constant, ramp, custom force, squ
 ### In progress
 
 - Finish inventorying other bundled/shared dependencies and decide whether they need independent upgrades; the current G29-only LUFA update does not change other firmware targets.
-- PC target output is confirmed: effects must reach a physical wheel connected through GIMX. Design the standard HID PID input and effect execution path; the firmware currently implements the PS4-focused Logitech protocol.
+- PC target output is confirmed: effects must reach a physical wheel connected through GIMX. Standard USB HID PID 1.0 is the first candidate for broad PC effect discovery. The real G29 is identified as 046D:C24F in PC mode, but compatibility between that identity, PID reports and Windows test software must be verified before changing firmware behavior.
+- Upstream Linux recognizes a G29 mode, but its hid-lg4ff driver exposes only FF_CONSTANT and autocenter to Linux's input force-feedback API. This describes that driver's supported interface; it does not establish the wheel hardware's full capability or Windows behavior. Use it as a reason to test the Windows protocol directly, not as a hardware capability limit. See [upstream hid-lg4ff.c](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-lg4ff.c).
 - Validate G29 behavior on hardware after the compiled LUFA update; the GitHub build cannot validate enumeration, authentication or force feedback.
 - Check whether the Windows/MSYS2 build can use a current supported toolchain.
 - Keep protocol and firmware behavior changes separate from dependency updates so each step can be compiled and reviewed.
@@ -53,11 +54,13 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 
 ### PC USB PID gap
 
-- [Descriptors.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/Descriptors.c) advertises Generic Desktop, Button and Logitech vendor pages. The report descriptor has no PID Usage Page `0x0F` or standard Set Effect/Periodic/Condition report collections. From that descriptor, standard PC PID software has no advertised effect capabilities; verify this on Windows as the PC path is implemented.
+- [Descriptors.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/Descriptors.c) advertises Generic Desktop, Button and Logitech vendor pages. The report descriptor has no PID Usage Page `0x0F` or standard Set Effect/Periodic/Condition report collections, so it does not currently advertise standard HID PID effects to a PC.
+- Microsoft documents GameInput force feedback over HID as aligned with USB PID 1.0. Logitech's G29 product specification identifies `046D:C24F` as PC mode. These facts support a standard PID implementation as the first design candidate, but do not prove that Windows will route every test application through PID when using the Logitech identity. Verify enumeration and effect creation on Windows before settling descriptor identity and protocol. References: [Microsoft GameInput FFB](https://learn.microsoft.com/en-us/gaming/gdk/docs/features/common/input/hardware/input-hardware-force-feedback?view=gdk-2604), [Logitech G29 specifications](https://support.logi.com/hc/en-us/articles/360023463753-G29-Driving-Force-Racing-Wheel-Technical-Specifications).
 - [emu.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/emu.c) handles the existing vendor feature IDs `F0-F3`; it does not allocate PID effect blocks or process standard PID output reports.
 - The application haptic core currently models rumble, constant, spring and damper (plus LEDs/range). The Logitech conversion supports only constant, a limited variable-to-constant case, spring, damper and high-resolution spring/damper. Ramp, periodic waveforms, custom force, inertia and friction are not represented in the generic core.
 - Both current application sinks (Logitech protocol and OS/SDL) expose only rumble, constant, spring and damper; the core forwards discrete reports and has no periodic effect scheduler or motion-aware force model. Ramp/periodic effects will need time-varying output updates; inertia/friction need current wheel motion or a native condition-effect path, then output on the attached wheel.
-- PC support therefore requires coordinated firmware descriptor/report handling, an expanded effect model, parameter-block lifecycle and effect execution, plus a defined route to the physical wheel or simulator. Keep those changes separate from the PS4 vendor protocol and compile both paths after each step.
+- PC support therefore requires coordinated firmware descriptor/report handling, an expanded effect model, parameter-block lifecycle and effect execution, plus a defined route to the physical wheel. Keep the PS4 vendor protocol as a separate regression path and compile both targets after each step.
+- Protocol decision checkpoint: test standard HID PID enumeration and all target effect creation on Windows using the intended PC identity. If the Logitech identity selects a native-only path, compare a generic PID identity and the real G29 descriptor/report capture before choosing a compatible architecture.
 - USB-IF references: [PID Class Definition 1.0](https://www.usb.org/sites/default/files/documents/pid1_01.pdf) and [HID Usage Tables](https://www.usb.org/sites/default/files/hut1_3_0.pdf).
 
 ### Existing G29 PS4 emulation
@@ -73,11 +76,12 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 ## Next steps
 
 1. Preserve the green Linux and AVR build baselines and check the Windows/MSYS2 application build.
-2. Specify the PC PID descriptor, report IDs, effect pool strategy, capabilities and physical-output/simulator path against the USB-IF PID 1.0 contract.
-3. Extend the shared haptic model and firmware/application transport for every required effect type; implement effect allocation, parameter updates, gain/envelopes, operation/status, and condition calculations from wheel motion.
-4. Build a Windows test matrix that enumerates each effect, creates/configures it, starts/stops it and checks the resulting force; retain the PS4 build as a regression check.
-5. Validate descriptor and report behavior with USB captures, then confirm every effect produces force on the physical wheel connected through GIMX.
-6. Update this roadmap after every implementation step and CI result.
+2. Resolve PC protocol compatibility on Windows: test the target PC identity and the real G29's descriptor/report behavior, then choose standard HID PID, native Logitech reports or a measured combination. Record the test application and observable capabilities.
+3. Specify the selected descriptor/report IDs, effect pool strategy, capabilities and route to physical output against USB-IF PID 1.0 and the GIMX haptic sink.
+4. Extend the shared haptic model and firmware/application transport for every required effect type; implement effect allocation, parameter updates, gain/envelopes, operation/status, and condition calculations from wheel motion.
+5. Build a Windows test matrix that enumerates each effect, creates/configures it, starts/stops it and checks the resulting force; retain the PS4 build as a regression check.
+6. Validate descriptor and report behavior with USB captures, then confirm every effect produces force on the physical wheel connected through GIMX.
+7. Update this roadmap after every implementation step and CI result.
 
 ## References
 
