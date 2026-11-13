@@ -151,7 +151,7 @@ void haptic_sink_lg_update(struct haptic_sink_state * state) {
         dprintf("< %s %02x\n", ff_lg_get_cmd_name(data[0]), data[0]);
         for (i = 0; i < state->fifo.size; ++i) {
             e_slot slot = state->fifo.items[i];
-            if (state->slots[slot].updated && !state->slots[slot].data.playing) {
+            if (slot <= slot_force_4 && state->slots[slot].updated && !state->slots[slot].data.playing) {
                 state->slots[slot].updated = 0;
             }
         }
