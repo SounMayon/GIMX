@@ -19,6 +19,7 @@
 struct haptic_sink_state {
     struct ghid_device * hid;
     int write_pending;
+    unsigned short vid;
     unsigned short pid;
     uint8_t caps;
     struct {
@@ -34,9 +35,21 @@ static int is_g29_output(const struct haptic_sink_state * state) {
         state->pid == USB_PRODUCT_ID_LOGITECH_G29_PS4_WHEEL;
 }
 
+static int is_odrive_output(const struct haptic_sink_state * state) {
+    return state->vid == USB_VENDOR_ID_ODRIVE_WHEEL &&
+        state->pid == USB_PRODUCT_ID_ODRIVE_WHEEL;
+}
+
+static int supports_native_logitech_output(const struct haptic_sink_state * state) {
+    return is_g29_output(state) || is_odrive_output(state);
+}
+
 static inline void clear_report(struct haptic_sink_state * state) {
 
   memset(state->last_report.data, 0x00, sizeof(state->last_report.data));
+  if (is_odrive_output(state)) {
+      state->last_report.data[0] = GIMX_LOGITECH_REPORT_ID;
+  }
 }
 
 static void haptic_sink_lg_ack(struct haptic_sink_state * state) {
@@ -165,7 +178,7 @@ void haptic_sink_lg_update(struct haptic_sink_state * state) {
     if (slot != slot_nb) {
         clear_report(state);
         s_haptic_core_data * slot_data = &state->slots[slot].data;
-        if (is_g29_output(state) && slot_data->logitech_report_valid) {
+        if (supports_native_logitech_output(state) && slot_data->logitech_report_valid) {
             memcpy(data, slot_data->logitech_report, sizeof(slot_data->logitech_report));
         } else {
             ff_lg_convert_slot(slot_data, slot, &state->last_report, state->caps);
@@ -264,6 +277,7 @@ static struct haptic_sink_state * haptic_sink_lg_init(int joystick) {
     struct haptic_sink_state * state = (struct haptic_sink_state *) ptr;
 
     state->hid = hid;
+    state->vid = ids.vid;
     state->pid = ids.pid;
 
     state->caps = ff_lg_get_caps(ids.pid);
@@ -323,14 +337,12 @@ static void haptic_sink_lg_clean(struct haptic_sink_state * state) {
 static void haptic_sink_lg_process(struct haptic_sink_state * state, const s_haptic_core_data * data) {
 
     e_slot slot = slot_nb;
-    int g29_output = is_g29_output(state);
-
     switch(data->type) {
     case E_DATA_TYPE_NONE:
     case E_DATA_TYPE_RUMBLE:
         break;
     case E_DATA_TYPE_LOGITECH_RAW:
-        if (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB && data->logitech_report_valid) {
+        if (supports_native_logitech_output(state) && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB && data->logitech_report_valid) {
             slot = (e_slot)data->source_slot;
         } else {
             static int warned = 0;
@@ -341,15 +353,15 @@ static void haptic_sink_lg_process(struct haptic_sink_state * state, const s_hap
         }
         break;
     case E_DATA_TYPE_CONSTANT:
-        slot = (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
+        slot = (supports_native_logitech_output(state) && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
             (e_slot)data->source_slot : slot_constant;
         break;
     case E_DATA_TYPE_SPRING:
-        slot = (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
+        slot = (supports_native_logitech_output(state) && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
             (e_slot)data->source_slot : slot_spring;
         break;
     case E_DATA_TYPE_DAMPER:
-        slot = (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
+        slot = (supports_native_logitech_output(state) && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
             (e_slot)data->source_slot : slot_damper;
         break;
     case E_DATA_TYPE_LEDS:
@@ -394,6 +406,7 @@ static s_haptic_core_ids haptic_sink_lg_ids[] = {
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_G29_PC_WHEEL      },
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_G29_PS4_WHEEL     },
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_MOMO_WHEEL2       },
+        { .vid = USB_VENDOR_ID_ODRIVE_WHEEL, .pid = USB_PRODUCT_ID_ODRIVE_WHEEL            },
         { .vid = 0x0000,      .pid = 0x0000       }, // end of table
 };
 
