@@ -36,7 +36,7 @@ Use the USB HID PID 1.0 effect set as the coverage target: constant, ramp, custo
 - PS4 remains a required target: preserve G29 enumeration/authentication. Current native pass-through handles source effect reports on a physical G29; the PC/CI builds cannot prove the PS4 device path or physical force. Validate it with USB/serial captures and real hardware.
 - Upstream Linux recognizes a G29 mode, but its hid-lg4ff driver exposes only FF_CONSTANT and autocenter to Linux's input force-feedback API. This describes that driver's supported interface; it does not establish the wheel hardware's full capability or Windows behavior. Use it as a reason to test the Windows protocol directly, not as a hardware capability limit. See [upstream hid-lg4ff.c](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-lg4ff.c).
 - Validate G29 behavior on hardware after the compiled LUFA update; the GitHub build cannot validate enumeration, authentication or force feedback.
-- Check whether the Windows/MSYS2 build can use a current supported toolchain.
+- Added a Windows UCRT64 GitHub Actions build using current MSYS2 packages; the first run is pending. MSYS2 is rolling, so CI records the exact compiler and library package versions each run.
 - Keep protocol and firmware behavior changes separate from dependency updates so each step can be compiled and reviewed.
 
 ## Audit notes
@@ -51,7 +51,7 @@ The successful baseline exposed and fixed these issues under the current compile
 - Linux depended on the removed `ncursesw5-config` executable. The core Makefile now supports ncursesw5, ncursesw6 and pkg-config.
 - Current compiler diagnostics exposed missing standard-library declarations and mismatched/no-prototype Bluetooth APIs; the affected includes, declarations and call sites are corrected.
 
-The Ubuntu 26.04 Linux application build is green. The version-reporting step recorded GCC/G++ 15.2.0, wxWidgets 3.2.9, SDL2 2.32.10, libxml2 2.15.2, libusb 1.0.29, ncursesw 6.6, libcurl 8.18.0 and BlueZ 5.85. The Windows/MSYS2 build has not yet been run.
+The Ubuntu 26.04 Linux application build is green. The version-reporting step recorded GCC/G++ 15.2.0, wxWidgets 3.2.9, SDL2 2.32.10, libxml2 2.15.2, libusb 1.0.29, ncursesw 6.6, libcurl 8.18.0 and BlueZ 5.85. The first Windows/MSYS2 UCRT64 build is pending; its workflow records the exact rolling package versions.
 
 The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 and make 4.4.1.
 
@@ -78,7 +78,7 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 
 ## Next steps
 
-1. Preserve the green Linux and AVR build baselines and check the Windows/MSYS2 application build.
+1. Preserve the green Linux and AVR baselines, review the new Windows/UCRT64 build, and resolve any current-toolchain compile failures.
 2. Resolve PC protocol compatibility on Windows: test the target PC identity and the real G29's descriptor/report behavior, then choose standard HID PID, native Logitech reports or a measured combination. Record the test application and observable capabilities.
 3. Specify the selected PC descriptor/report IDs, effect pool strategy, capabilities and route to physical output against USB-IF PID 1.0 and the GIMX haptic sink.
 4. Extend the shared haptic model and firmware/application transport for every PC target effect; implement effect allocation, parameter updates, gain/envelopes, operation/status and motion-aware condition effects.

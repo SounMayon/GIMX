@@ -22,4 +22,20 @@ make -j2
 
 After changing headers, run `make clean` before rebuilding; the legacy Makefiles do not reliably track header dependencies.
 
-The Windows/MSYS2 build remains to be checked against current package versions.
+
+## Windows build with MSYS2 UCRT64
+
+Use the current UCRT64 environment. Install the build tools and libraries, then clone the branch with its recursive submodules:
+
+    pacman -Syu
+    pacman -S --needed base-devel git mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-wxwidgets3.2-msw mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-libxml2 mingw-w64-ucrt-x86_64-libusb mingw-w64-ucrt-x86_64-curl mingw-w64-ucrt-x86_64-ncurses mingw-w64-ucrt-x86_64-gettext mingw-w64-ucrt-x86_64-pkgconf
+    git submodule update --init --recursive
+
+Apply the maintained shared-submodule fixes, then compile:
+
+    git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
+    git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
+    make clean
+    make -j2
+
+The GitHub Actions workflow uses the same UCRT64 packages and builds the complete application. It does not package an installer.

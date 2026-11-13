@@ -1,0 +1,58 @@
+name: Windows build
+
+on:
+  push:
+    branches: [GIMX-Reborn]
+  pull_request:
+    branches: [GIMX-Reborn]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Keep repository files in Unix line endings
+        shell: pwsh
+        run: git config --global core.autocrlf input
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            base-devel
+            git
+            mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-wxwidgets3.2-msw
+            mingw-w64-ucrt-x86_64-SDL2
+            mingw-w64-ucrt-x86_64-libxml2
+            mingw-w64-ucrt-x86_64-libusb
+            mingw-w64-ucrt-x86_64-curl
+            mingw-w64-ucrt-x86_64-ncurses
+            mingw-w64-ucrt-x86_64-gettext
+            mingw-w64-ucrt-x86_64-pkgconf
+      - name: Record toolchain and library versions
+        run: |
+          gcc --version | head -n1
+          g++ --version | head -n1
+          wx-config --version
+          sdl2-config --version
+          xml2-config --version
+          ncursesw6-config --version
+          pacman -Q mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-wxwidgets3.2-msw mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-libxml2 mingw-w64-ucrt-x86_64-libusb mingw-w64-ucrt-x86_64-curl mingw-w64-ucrt-x86_64-ncurses mingw-w64-ucrt-x86_64-gettext
+      - name: Apply downstream shared HID fix
+        run: git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
+      - name: Apply downstream shared USB fix
+        run: git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
+      - name: Clean build
+        run: make clean
+      - name: Build
+        run: make -j2
