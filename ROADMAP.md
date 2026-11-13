@@ -30,7 +30,7 @@ The target effect set follows USB HID PID 1.0: constant, ramp, custom force, squ
 ### In progress
 
 - Finish inventorying other bundled/shared dependencies and decide whether they need independent upgrades; the current G29-only LUFA update does not change other firmware targets.
-- Define the PC HID PID report path and effect execution model; the current firmware is a PS4-focused Logitech report emulator and does not yet implement the standard PC PID effect contract.
+- PC target output is confirmed: effects must reach a physical wheel connected through GIMX. Design the standard HID PID input and effect execution path; the firmware currently implements the PS4-focused Logitech protocol.
 - Validate G29 behavior on hardware after the compiled LUFA update; the GitHub build cannot validate enumeration, authentication or force feedback.
 - Check whether the Windows/MSYS2 build can use a current supported toolchain.
 - Keep protocol and firmware behavior changes separate from dependency updates so each step can be compiled and reviewed.
@@ -56,6 +56,7 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 - [Descriptors.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/Descriptors.c) advertises Generic Desktop, Button and Logitech vendor pages. The report descriptor has no PID Usage Page `0x0F` or standard Set Effect/Periodic/Condition report collections. From that descriptor, standard PC PID software has no advertised effect capabilities; verify this on Windows as the PC path is implemented.
 - [emu.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/emu.c) handles the existing vendor feature IDs `F0-F3`; it does not allocate PID effect blocks or process standard PID output reports.
 - The application haptic core currently models rumble, constant, spring and damper (plus LEDs/range). The Logitech conversion supports only constant, a limited variable-to-constant case, spring, damper and high-resolution spring/damper. Ramp, periodic waveforms, custom force, inertia and friction are not represented in the generic core.
+- Both current application sinks (Logitech protocol and OS/SDL) expose only rumble, constant, spring and damper; the core forwards discrete reports and has no periodic effect scheduler or motion-aware force model. Ramp/periodic effects will need time-varying output updates; inertia/friction need current wheel motion or a native condition-effect path, then output on the attached wheel.
 - PC support therefore requires coordinated firmware descriptor/report handling, an expanded effect model, parameter-block lifecycle and effect execution, plus a defined route to the physical wheel or simulator. Keep those changes separate from the PS4 vendor protocol and compile both paths after each step.
 - USB-IF references: [PID Class Definition 1.0](https://www.usb.org/sites/default/files/documents/pid1_01.pdf) and [HID Usage Tables](https://www.usb.org/sites/default/files/hut1_3_0.pdf).
 
