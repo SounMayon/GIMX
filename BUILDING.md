@@ -35,6 +35,7 @@ Apply the maintained shared-submodule fixes, then compile:
 
     git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
     git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
+    git -C shared/gimxprio apply ../../patches/gimxprio-pointer-format.patch
     make clean
     make -j2
 

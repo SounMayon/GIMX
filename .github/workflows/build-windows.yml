@@ -52,6 +52,8 @@ jobs:
         run: git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
       - name: Apply downstream shared USB fix
         run: git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
+      - name: Apply downstream shared priority formatting fix
+        run: git -C shared/gimxprio apply ../../patches/gimxprio-pointer-format.patch
       - name: Clean build
         run: make clean
       - name: Build
