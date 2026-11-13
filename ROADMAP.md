@@ -104,3 +104,19 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 - [GIMX guide for steering wheel to PS4](https://gimx.fr/wiki/index.php?connectiontype=USB&device=SteeringWheel&ostype=windows&platform=ps4&title=Guide)
 - [GIMX force feedback documentation](https://gimx.fr/wiki/index.php?title=Force_Feedback%2Fen)
 - [LUFA releases](https://github.com/abcminiuser/lufa/releases)
+
+
+## ODrive Wheel native G29 bridge
+
+**Target:** keep the GIMX PS4 G29 authentication/report path intact while delivering the game's native Logitech force commands to the ODrive Wheel motor; keep a standard PID 1.0 HID path for PC test programs.
+
+| Step | Result | State |
+|---|---|---|
+| Route ODrive Wheel VID/PID 1209:0D40 through GIMX's Logitech output sink, with a dedicated HID report ID carrying the unchanged seven-byte Logitech command | Firmware and application bridge transport | Implementing |
+| Convert native constant, spring, damper, and non-ramping variable reports into ODrive force effects; reserve four firmware effect slots for Logitech slots | Firmware parser and effect-engine path | Implementing |
+| Convert timed variable, periodic/waveform, trapezoid, rectangle, auto-center, friction, default-spring and multi-slot semantics | Full native G29 effect coverage | Planned |
+| Advertise and implement the complete PC PID 1.0 effect set, including custom force samples, and ensure Windows programs enumerate and operate every effect | PC detection and simulation | Planned |
+| Build GIMX Linux/Windows and ODrive firmware in GitHub Actions for each implementation increment | Compile verification | In progress |
+| Capture PC/PS4 reports and validate motor forces and PS4 authentication on hardware | User hardware validation | Deferred to user |
+
+The first firmware increment is deliberately limited to the native report subset already decoded by GIMX. It does not establish full G29 equivalence yet. Keep each CI result and each unsupported report type visible here as implementation proceeds.

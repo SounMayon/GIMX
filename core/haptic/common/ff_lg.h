@@ -20,6 +20,9 @@
 #endif
 
 #define USB_VENDOR_ID_LOGITECH                  0x046d
+#define USB_VENDOR_ID_ODRIVE_WHEEL               0x1209
+#define USB_PRODUCT_ID_ODRIVE_WHEEL              0x0d40
+#define GIMX_LOGITECH_REPORT_ID                  0x30
 
 #define USB_PRODUCT_ID_LOGITECH_FORMULA_YELLOW   0xc202 // no force feedback
 #define USB_PRODUCT_ID_LOGITECH_FORMULA_GP       0xc20e // no force feedback
