@@ -1,4 +1,4 @@
-# Roadmap: GIMX Reborn and G29 PS4 emulation
+# Roadmap: GIMX Reborn and PC G29 force feedback
 
 Last updated: 2026-11-13
 
@@ -7,6 +7,12 @@ Last updated: 2026-11-13
 - Application: [SounMayon/GIMX, `GIMX-Reborn`](https://github.com/SounMayon/GIMX/tree/GIMX-Reborn)
 - Firmware: [SounMayon/GIMX-firmwares, `G29-Finished`](https://github.com/SounMayon/GIMX-firmwares/tree/G29-Finished/EMUG29PS4)
 - Documentation: [GIMX wiki](https://gimx.fr/wiki/index.php?title=Main_Page)
+
+## Final acceptance goal: G29 FFB on PC
+
+The emulated G29 must enumerate on a PC as a force-feedback device. FFB test software must discover each supported effect type, create/configure it, start and stop it, and produce the expected force through the chosen output path. Merely advertising an effect in the descriptor does not count as support.
+
+The target effect set follows USB HID PID 1.0: constant, ramp, custom force, square, sine, triangle, sawtooth up/down, spring, damper, inertia and friction. Validate discovery and commands with Windows DirectInput/GameInput tools, then verify force output on a connected actuator or a documented simulator. Keep the existing PS4 target as a separate regression path.
 
 ## Progress
 
@@ -24,6 +30,7 @@ Last updated: 2026-11-13
 ### In progress
 
 - Finish inventorying other bundled/shared dependencies and decide whether they need independent upgrades; the current G29-only LUFA update does not change other firmware targets.
+- Define the PC HID PID report path and effect execution model; the current firmware is a PS4-focused Logitech report emulator and does not yet implement the standard PC PID effect contract.
 - Validate G29 behavior on hardware after the compiled LUFA update; the GitHub build cannot validate enumeration, authentication or force feedback.
 - Check whether the Windows/MSYS2 build can use a current supported toolchain.
 - Keep protocol and firmware behavior changes separate from dependency updates so each step can be compiled and reviewed.
@@ -44,7 +51,15 @@ The Ubuntu 26.04 Linux application build is green. The version-reporting step re
 
 The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 and make 4.4.1.
 
-### G29 PS4 emulation
+### PC USB PID gap
+
+- [Descriptors.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/Descriptors.c) advertises Generic Desktop, Button and Logitech vendor pages. The report descriptor has no PID Usage Page `0x0F` or standard Set Effect/Periodic/Condition report collections. From that descriptor, standard PC PID software has no advertised effect capabilities; verify this on Windows as the PC path is implemented.
+- [emu.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/emu.c) handles the existing vendor feature IDs `F0-F3`; it does not allocate PID effect blocks or process standard PID output reports.
+- The application haptic core currently models rumble, constant, spring and damper (plus LEDs/range). The Logitech conversion supports only constant, a limited variable-to-constant case, spring, damper and high-resolution spring/damper. Ramp, periodic waveforms, custom force, inertia and friction are not represented in the generic core.
+- PC support therefore requires coordinated firmware descriptor/report handling, an expanded effect model, parameter-block lifecycle and effect execution, plus a defined route to the physical wheel or simulator. Keep those changes separate from the PS4 vendor protocol and compile both paths after each step.
+- USB-IF references: [PID Class Definition 1.0](https://www.usb.org/sites/default/files/documents/pid1_01.pdf) and [HID Usage Tables](https://www.usb.org/sites/default/files/hut1_3_0.pdf).
+
+### Existing G29 PS4 emulation
 
 - The firmware descriptor advertises Logitech `046d:C260` and interrupt input/output endpoints in [Descriptors.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/Descriptors.c#L95-L105).
 - The firmware handles HID feature requests `F1/F2` in [emu.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/emu.c#L32-L45), sends a serial header and spins until `spoofReply` arrives. There is no timeout or recovery path, so a lost reply can stall that request.
@@ -56,12 +71,12 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 
 ## Next steps
 
-1. Review remaining bundled/shared dependencies and keep the current Linux/AVR version reports as the baseline.
-2. Check a Windows/MSYS2 build against a current supported toolchain.
-3. Add report-level tests and compare USB descriptors/reports with captures from a genuine G29.
-4. Validate authentication, reconnects and force feedback with a real G29, GIMX adapter and PS4 before changing emulation behavior.
-5. Expand the firmware build matrix before changing the shared LUFA tree used by other targets.
-6. Update this roadmap with each build result and code change.
+1. Preserve the green Linux and AVR build baselines and check the Windows/MSYS2 application build.
+2. Specify the PC PID descriptor, report IDs, effect pool strategy, capabilities and physical-output/simulator path against the USB-IF PID 1.0 contract.
+3. Extend the shared haptic model and firmware/application transport for every required effect type; implement effect allocation, parameter updates, gain/envelopes, operation/status, and condition calculations from wheel motion.
+4. Build a Windows test matrix that enumerates each effect, creates/configures it, starts/stops it and checks the resulting force; retain the PS4 build as a regression check.
+5. Validate descriptor and report behavior with USB captures, then test force output with a real G29/adapter or the documented simulator.
+6. Update this roadmap after every implementation step and CI result.
 
 ## References
 
