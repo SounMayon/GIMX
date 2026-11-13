@@ -111,7 +111,7 @@ static void process_extended(struct haptic_source_state * state, const unsigned 
 
 static void haptic_source_lg_process(struct haptic_source_state * state, size_t size, const unsigned char * data) {
 
-    if (size < state->cmd_offset + FF_LG_OUTPUT_REPORT_SIZE) {
+    if (size < (size_t)state->cmd_offset + (size_t)FF_LG_OUTPUT_REPORT_SIZE) {
         static int warned = 0;
         if (!warned) {
             gwarn("ignoring truncated Logitech force feedback report\n");

@@ -29,7 +29,7 @@ Use the USB HID PID 1.0 effect set as the coverage target: constant, ramp, custo
 - Added Linux build instructions that include the maintained patches for the pinned HID and USB submodules.
 - Registered physical G29 PC (`046d:C24F`) and PS4 (`046d:C260`) IDs with the Logitech FFB output sink so decoded constant, spring and damper effects use its native reports; build passed in [run 43337088198](https://github.com/SounMayon/GIMX/actions/runs/43337088198).
 - Added a native-report path for timed variable and other Logitech force types the generic model cannot represent. It preserves the four source effect slots and forwards these reports to a matching physical G29; Linux build passed in [run 43337925390](https://github.com/SounMayon/GIMX/actions/runs/43337925390), and the grouped-stop follow-up passed in [run 43338022752](https://github.com/SounMayon/GIMX/actions/runs/43338022752).
-- Hardened the PS4 Logitech source path by rejecting truncated output reports before parsing and correcting FIFO removal to shift using `FIFO_SIZE` and clear the actual tail slot; Windows/Linux CI is pending for the combined current toolchain fixes.
+- Hardened the PS4 Logitech source path by rejecting truncated output reports before parsing and correcting FIFO removal to shift using `FIFO_SIZE` and clear the actual tail slot. The first Linux build caught a strict signedness warning in the new size guard; it now casts both operands to `size_t`, and CI is rerunning.
 
 ### In progress
 
