@@ -33,32 +33,38 @@ void haptic_tweak_apply(const s_haptic_core_tweaks * tweaks, s_haptic_core_data 
         break;
     case E_DATA_TYPE_CONSTANT:
         if (tweaks->gain.constant != 100) {
+            data->logitech_report_valid = 0;
             APPLY_GAIN(data->constant.level, tweaks->gain.constant, -SHRT_MAX, SHRT_MAX)
         }
         if (tweaks->invert) {
+            data->logitech_report_valid = 0;
             data->constant.level = -data->constant.level;
         }
         break;
     case E_DATA_TYPE_SPRING:
         if (tweaks->gain.spring != 100) {
+            data->logitech_report_valid = 0;
             APPLY_GAIN(data->spring.saturation.left, tweaks->gain.spring, 0, USHRT_MAX)
             APPLY_GAIN(data->spring.saturation.right, tweaks->gain.spring, 0, USHRT_MAX)
             APPLY_GAIN(data->spring.coefficient.left, tweaks->gain.spring, -SHRT_MAX, SHRT_MAX)
             APPLY_GAIN(data->spring.coefficient.right, tweaks->gain.spring, -SHRT_MAX, SHRT_MAX)
         }
         if (tweaks->invert) {
+            data->logitech_report_valid = 0;
             SWAP(int16_t, data->spring.coefficient.left, data->spring.coefficient.right)
             data->spring.center = -data->spring.center;
         }
         break;
     case E_DATA_TYPE_DAMPER:
         if (tweaks->gain.damper != 100) {
+            data->logitech_report_valid = 0;
             APPLY_GAIN(data->damper.saturation.left, tweaks->gain.damper, 0, USHRT_MAX)
             APPLY_GAIN(data->damper.saturation.right, tweaks->gain.damper, 0, USHRT_MAX)
             APPLY_GAIN(data->damper.coefficient.left, tweaks->gain.damper, -SHRT_MAX, SHRT_MAX)
             APPLY_GAIN(data->damper.coefficient.right, tweaks->gain.damper, -SHRT_MAX, SHRT_MAX)
         }
         if (tweaks->invert) {
+            data->logitech_report_valid = 0;
             SWAP(int16_t, data->spring.coefficient.left, data->spring.coefficient.right)
         }
         break;

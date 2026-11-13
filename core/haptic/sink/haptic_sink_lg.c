@@ -165,7 +165,7 @@ void haptic_sink_lg_update(struct haptic_sink_state * state) {
     if (slot != slot_nb) {
         clear_report(state);
         s_haptic_core_data * slot_data = &state->slots[slot].data;
-        if (is_g29_output(state) && slot_data->type == E_DATA_TYPE_LOGITECH_RAW && slot_data->logitech_report_valid) {
+        if (is_g29_output(state) && slot_data->logitech_report_valid) {
             memcpy(data, slot_data->logitech_report, sizeof(slot_data->logitech_report));
         } else {
             ff_lg_convert_slot(slot_data, slot, &state->last_report, state->caps);
