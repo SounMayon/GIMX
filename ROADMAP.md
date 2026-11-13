@@ -10,9 +10,9 @@ Last updated: 2026-11-13
 
 ## Final acceptance goal: G29 FFB on PC
 
-The emulated G29 must enumerate on a PC as a force-feedback device. FFB test software must discover each supported effect type, create/configure it, start and stop it, and produce the expected force through the chosen output path. Merely advertising an effect in the descriptor does not count as support.
+The emulated G29 must enumerate on a PC as a force-feedback device. FFB test software must discover each supported effect type, create/configure it, start and stop it, and produce the expected force on a physical wheel connected through GIMX. Merely advertising an effect in the descriptor does not count as support.
 
-The target effect set follows USB HID PID 1.0: constant, ramp, custom force, square, sine, triangle, sawtooth up/down, spring, damper, inertia and friction. Validate discovery and commands with Windows DirectInput/GameInput tools, then verify force output on a connected actuator or a documented simulator. Keep the existing PS4 target as a separate regression path.
+The target effect set follows USB HID PID 1.0: constant, ramp, custom force, square, sine, triangle, sawtooth up/down, spring, damper, inertia and friction. Validate discovery and commands with Windows DirectInput/GameInput tools, then verify the resulting force on the connected physical wheel. Keep the existing PS4 target as a separate regression path.
 
 ## Progress
 
@@ -75,7 +75,7 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 2. Specify the PC PID descriptor, report IDs, effect pool strategy, capabilities and physical-output/simulator path against the USB-IF PID 1.0 contract.
 3. Extend the shared haptic model and firmware/application transport for every required effect type; implement effect allocation, parameter updates, gain/envelopes, operation/status, and condition calculations from wheel motion.
 4. Build a Windows test matrix that enumerates each effect, creates/configures it, starts/stops it and checks the resulting force; retain the PS4 build as a regression check.
-5. Validate descriptor and report behavior with USB captures, then test force output with a real G29/adapter or the documented simulator.
+5. Validate descriptor and report behavior with USB captures, then confirm every effect produces force on the physical wheel connected through GIMX.
 6. Update this roadmap after every implementation step and CI result.
 
 ## References
