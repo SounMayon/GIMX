@@ -68,6 +68,14 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 - Protocol decision checkpoint: test standard HID PID enumeration and all target effect creation on Windows using the intended PC identity. If the Logitech identity selects a native-only path, compare a generic PID identity and the real G29 descriptor/report capture before choosing a compatible architecture.
 - USB-IF references: [PID Class Definition 1.0](https://www.usb.org/sites/default/files/documents/pid1_01.pdf) and [HID Usage Tables](https://www.usb.org/sites/default/files/hut1_3_0.pdf).
 
+### Odrive-Wheel as the DIY physical FFB output
+
+- The [Odrive-Wheel `feature/t300-hef4021` firmware](https://github.com/SounMayon/Odrive-Wheel/tree/feature/t300-hef4021) uses USB VID/PID `1209:0D40` and exposes a composite HID FFB plus CDC device. Its USB identity is not the Logitech G29 identity used by the PS4 emulator.
+- Its HID FFB implementation handles effect creation, constant, ramp, periodic and condition reports, and its effects calculator renders periodic waveforms and position/velocity/acceleration-based forces. Custom-force and sample-download reports currently have no implementation, so complete HID PID coverage is not established.
+- GIMX's generic OS sink advertises only rumble, constant, spring and damper. It warns and drops `LOGITECH_RAW`; the Logitech sink forwards native reports only for Logitech G29 output IDs. Therefore the current GIMX branch cannot deliver every PS4-native G29 report to this Odrive device. Some modeled effects may work through the OS haptic API, but that path has not been verified with this firmware.
+- Required integration: add and validate a dedicated `1209:0D40` output path that converts the G29 source reports into effects the Odrive HID PID endpoint accepts, including update/play/stop, timing, gain and effect-slot lifecycle. Preserve direct G29 pass-through as a separate path.
+- On a PC, the Odrive firmware presents its own HID PID identity; actual FFB use depends on host/game support. Flashing `EMUG29PS4.hex` onto the separate GIMX adapter does not change the Odrive USB identity. The PS4 emulator descriptor and Odrive output device are different USB devices and roles.
+
 ### Existing G29 PS4 emulation
 
 - The firmware descriptor advertises Logitech `046d:C260` and interrupt input/output endpoints in [Descriptors.c](https://github.com/SounMayon/GIMX-firmwares/blob/G29-Finished/EMUG29PS4/Descriptors.c#L95-L105).
