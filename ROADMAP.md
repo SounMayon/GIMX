@@ -113,10 +113,10 @@ The AVR workflow recorded avr-gcc 14.3.0, avr-libc 2.2.1, binutils-avr 2.43.50 a
 | Step | Result | State |
 |---|---|---|
 | Route ODrive Wheel VID/PID 1209:0D40 through GIMX's Logitech output sink, with a dedicated HID report ID carrying the unchanged seven-byte Logitech command | Firmware and application bridge transport | Implemented; Linux and Windows compile passed (runs [43352898991](https://github.com/SounMayon/GIMX/actions/runs/43352898991), [43352898973](https://github.com/SounMayon/GIMX/actions/runs/43352898973)) |
-| Convert native constant, spring, damper, and non-ramping variable reports into ODrive force effects; reserve four firmware effect slots for Logitech slots | Firmware parser and effect-engine path | Code committed; ODrive firmware build pending ([run 43353355296](https://github.com/SounMayon/Odrive-Wheel/actions/runs/43353355296)) |
+| Convert native constant, spring, damper, and non-ramping variable reports into ODrive force effects; reserve four firmware effect slots for Logitech slots | Firmware parser and effect-engine path | Code committed; ODrive firmware build passed ([run 43353355296](https://github.com/SounMayon/Odrive-Wheel/actions/runs/43353355296)) |
 | Convert timed variable, periodic/waveform, trapezoid, rectangle, auto-center, friction, default-spring and multi-slot semantics | Full native G29 effect coverage | Planned |
 | Advertise and implement the complete PC PID 1.0 effect set, including custom force samples, and ensure Windows programs enumerate and operate every effect | PC detection and simulation | Planned |
-| Build GIMX Linux/Windows and ODrive firmware in GitHub Actions for each implementation increment | Compile verification | In progress |
+| Build GIMX Linux/Windows and ODrive firmware in GitHub Actions for each implementation increment | Compile verification | First increment passed: GIMX Linux/Windows [43352898991](https://github.com/SounMayon/GIMX/actions/runs/43352898991), [43352898973](https://github.com/SounMayon/GIMX/actions/runs/43352898973); ODrive [43353355296](https://github.com/SounMayon/Odrive-Wheel/actions/runs/43353355296) |
 | Capture PC/PS4 reports and validate motor forces and PS4 authentication on hardware | User hardware validation | Deferred to user |
 
 The first firmware increment is deliberately limited to the native report subset already decoded by GIMX. It does not establish full G29 equivalence yet. Keep each CI result and each unsupported report type visible here as implementation proceeds.
