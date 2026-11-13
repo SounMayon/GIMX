@@ -7,6 +7,7 @@
 #define GIMXDOWNLOADER_H_
 
 #include <string>
+#include <cstdint>
 #include <ctime>
 
 typedef void CURL;
@@ -26,7 +27,7 @@ public:
     typedef int (*ProgressCallback)(void *clientp, Downloader::DownloaderStatus status, double progress, double total);
     DownloaderStatus download(const std::string& url, std::string& output);
     DownloaderStatus download(const std::string& url, const std::string& file, ProgressCallback callback, void * clientp);
-    int progress(int64_t  dlnow, int64_t  dltotal);
+    int progress(std::int64_t dlnow, std::int64_t dltotal);
     static std::string generateTempFile(const std::string& extension);
     static std::string getProgress(double progress, double total);
 private:

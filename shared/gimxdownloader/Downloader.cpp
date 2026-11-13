@@ -134,7 +134,7 @@ static int progress_callback(void * clientp, curl_off_t dltotal, curl_off_t dlno
     return ((Downloader *) clientp)->progress(dlnow, dltotal);
 }
 
-int Downloader::progress(int64_t  dlnow, int64_t  dltotal) {
+int Downloader::progress(std::int64_t dlnow, std::int64_t dltotal) {
 
     DownloaderStatus status = Downloader::DownloaderStatusConnectionPending;
 
