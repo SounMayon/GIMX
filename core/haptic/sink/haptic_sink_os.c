@@ -102,6 +102,14 @@ static void haptic_sink_os_process(struct haptic_sink_state * state, const s_hap
     case E_DATA_TYPE_RANGE:
         ginfo(_("adjust your wheel range to %u degrees\n"), data->range.value);
         break;
+    case E_DATA_TYPE_LOGITECH_RAW: {
+        static int warned = 0;
+        if (!warned) {
+            gwarn("native Logitech force effects require a matching G29 output sink\n");
+            warned = 1;
+        }
+        break;
+    }
     case E_DATA_TYPE_NONE:
     case E_DATA_TYPE_RUMBLE:
     case E_DATA_TYPE_LEDS:

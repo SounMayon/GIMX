@@ -29,6 +29,11 @@ struct haptic_sink_state {
     s_ff_lg_report last_report;
 };
 
+static int is_g29_output(const struct haptic_sink_state * state) {
+    return state->pid == USB_PRODUCT_ID_LOGITECH_G29_PC_WHEEL ||
+        state->pid == USB_PRODUCT_ID_LOGITECH_G29_PS4_WHEEL;
+}
+
 static inline void clear_report(struct haptic_sink_state * state) {
 
   memset(state->last_report.data, 0x00, sizeof(state->last_report.data));
@@ -133,7 +138,7 @@ void haptic_sink_lg_update(struct haptic_sink_state * state) {
 
     for (i = 0; i < state->fifo.size; ++i) {
         e_slot slot = state->fifo.items[i];
-        if (slot == slot_constant || slot == slot_spring || slot == slot_damper) {
+        if (slot <= slot_force_4) {
             if (state->slots[slot].updated && !state->slots[slot].data.playing) {
                 mask |= (1 << slot);
             }
@@ -159,7 +164,12 @@ void haptic_sink_lg_update(struct haptic_sink_state * state) {
     e_slot slot = haptic_sink_fifo_peek(&state->fifo);
     if (slot != slot_nb) {
         clear_report(state);
-        ff_lg_convert_slot(&state->slots[slot].data, slot, &state->last_report, state->caps);
+        s_haptic_core_data * slot_data = &state->slots[slot].data;
+        if (is_g29_output(state) && slot_data->type == E_DATA_TYPE_LOGITECH_RAW && slot_data->logitech_report_valid) {
+            memcpy(data, slot_data->logitech_report, sizeof(slot_data->logitech_report));
+        } else {
+            ff_lg_convert_slot(slot_data, slot, &state->last_report, state->caps);
+        }
         if(gimx_params.debug.haptic) {
             dprintf("< ");
             if (data[0] == FF_LG_CMD_EXTENDED_COMMAND) {
@@ -285,16 +295,12 @@ static void haptic_sink_lg_clean(struct haptic_sink_state * state) {
     uint8_t mask = 0;
     uint8_t * data = state->last_report.data + 1;
 
-    // stop playing forces
-
-    if (state->slots[slot_constant].data.playing) {
-        mask |= (1 << slot_constant);
-    }
-    if (state->slots[slot_spring].data.playing) {
-        mask |= (1 << slot_spring);
-    }
-    if (state->slots[slot_damper].data.playing) {
-        mask |= (1 << slot_damper);
+    // stop every active Logitech effect slot
+    int i;
+    for (i = 0; i < FF_LG_FSLOTS_NB; ++i) {
+        if (state->slots[i].data.playing) {
+            mask |= (1 << i);
+        }
     }
 
     if (mask) {
@@ -317,20 +323,34 @@ static void haptic_sink_lg_clean(struct haptic_sink_state * state) {
 static void haptic_sink_lg_process(struct haptic_sink_state * state, const s_haptic_core_data * data) {
 
     e_slot slot = slot_nb;
+    int g29_output = is_g29_output(state);
 
     switch(data->type) {
     case E_DATA_TYPE_NONE:
-        break;
     case E_DATA_TYPE_RUMBLE:
         break;
+    case E_DATA_TYPE_LOGITECH_RAW:
+        if (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB && data->logitech_report_valid) {
+            slot = (e_slot)data->source_slot;
+        } else {
+            static int warned = 0;
+            if (!warned) {
+                gwarn("< skipping native Logitech effect: output wheel is not a G29\n");
+                warned = 1;
+            }
+        }
+        break;
     case E_DATA_TYPE_CONSTANT:
-        slot = slot_constant;
+        slot = (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
+            (e_slot)data->source_slot : slot_constant;
         break;
     case E_DATA_TYPE_SPRING:
-        slot = slot_spring;
+        slot = (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
+            (e_slot)data->source_slot : slot_spring;
         break;
     case E_DATA_TYPE_DAMPER:
-        slot = slot_damper;
+        slot = (g29_output && data->source_slot_valid && data->source_slot < FF_LG_FSLOTS_NB) ?
+            (e_slot)data->source_slot : slot_damper;
         break;
     case E_DATA_TYPE_LEDS:
         if (state->caps & FF_LG_CAPS_LEDS) {
@@ -362,7 +382,6 @@ static void haptic_sink_lg_process(struct haptic_sink_state * state, const s_hap
         haptic_sink_fifo_push(&state->fifo, slot);
     }
 }
-
 
 static s_haptic_core_ids haptic_sink_lg_ids[] = {
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_FORMULA_FORCE_GP  },

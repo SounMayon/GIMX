@@ -62,6 +62,9 @@ void haptic_tweak_apply(const s_haptic_core_tweaks * tweaks, s_haptic_core_data 
             SWAP(int16_t, data->spring.coefficient.left, data->spring.coefficient.right)
         }
         break;
+    case E_DATA_TYPE_LOGITECH_RAW:
+        // Native reports are forwarded byte-for-byte to a matching G29 sink.
+        break;
     case E_DATA_TYPE_LEDS:
         break;
     case E_DATA_TYPE_RANGE:

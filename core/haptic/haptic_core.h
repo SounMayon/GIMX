@@ -41,6 +41,7 @@ typedef enum {
     E_DATA_TYPE_DAMPER,
     E_DATA_TYPE_LEDS,
     E_DATA_TYPE_RANGE,
+    E_DATA_TYPE_LOGITECH_RAW,
 } e_haptic_core_data_type;
 
 typedef struct {
@@ -62,6 +63,10 @@ typedef struct {
         s_haptic_core_leds leds;
         s_haptic_core_range range;
     };
+    uint8_t source_slot;
+    uint8_t source_slot_valid;
+    uint8_t logitech_report_valid;
+    uint8_t logitech_report[7]; // Logitech force report payload without the USB report ID
 } s_haptic_core_data;
 
 typedef struct {

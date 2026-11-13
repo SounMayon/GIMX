@@ -381,6 +381,12 @@ int ff_lg_convert_force(uint8_t caps, uint8_t slot_index, const s_ff_lg_command 
     int ret = 0;
 
     memset(to, 0x00, sizeof(*to));
+    to->source_slot = slot_index;
+    to->source_slot_valid = 1;
+    to->logitech_report_valid = 1;
+    to->logitech_report[0] = (uint8_t)((1U << (slot_index + FF_LG_FSLOTS_OFFSET)) |
+        (playing ? FF_LG_CMD_DOWNLOAD_AND_PLAY : FF_LG_CMD_STOP));
+    memcpy(to->logitech_report + 1, force, sizeof(*force));
 
     switch (force->force_type) {
     case FF_LG_FTYPE_CONSTANT:
@@ -392,31 +398,17 @@ int ff_lg_convert_force(uint8_t caps, uint8_t slot_index, const s_ff_lg_command 
         ret = 1;
         break;
     case FF_LG_FTYPE_VARIABLE:
-        to->type = E_DATA_TYPE_CONSTANT;
-        if (playing) {
-            static int warned = 0;
-            if (slot_index == 0) {
-                if (FF_LG_VARIABLE_T1(force) && FF_LG_VARIABLE_S1(force)) {
-                    if (warned == 0) {
-                        gwarn("variable force cannot be converted to constant force (l1=%hu, t1=%hu, s1=%hu, d1=%hu\n",
-                            FF_LG_VARIABLE_L1(force), FF_LG_VARIABLE_T1(force), FF_LG_VARIABLE_S1(force), FF_LG_VARIABLE_D1(force));
-                        warned = 1;
-                    }
-                } else {
-                    to->playing = 1;
-                    to->constant.level = ff_lg_u8_to_s16(FF_LG_VARIABLE_L1(force));
-                }
-            } else if (slot_index == 2) {
-                if (FF_LG_VARIABLE_T2(force) && FF_LG_VARIABLE_S2(force)) {
-                    if (warned == 0) {
-                        gwarn("variable force cannot be converted to constant force (l2=%hu, t2=%hu, s2=%hu, d2=%hu\n",
-                            FF_LG_VARIABLE_L2(force), FF_LG_VARIABLE_T2(force), FF_LG_VARIABLE_S2(force), FF_LG_VARIABLE_D2(force));
-                        warned = 1;
-                    }
-                } else {
-                    to->playing = 1;
-                    to->constant.level = ff_lg_u8_to_s16(FF_LG_VARIABLE_L2(force));
-                }
+        if ((slot_index == 0 && FF_LG_VARIABLE_T1(force) && FF_LG_VARIABLE_S1(force)) ||
+            (slot_index == 2 && FF_LG_VARIABLE_T2(force) && FF_LG_VARIABLE_S2(force)) ||
+            (slot_index != 0 && slot_index != 2)) {
+            to->type = E_DATA_TYPE_LOGITECH_RAW;
+            to->playing = playing != 0;
+        } else {
+            to->type = E_DATA_TYPE_CONSTANT;
+            if (playing) {
+                to->playing = 1;
+                to->constant.level = ff_lg_u8_to_s16(slot_index == 0 ?
+                    FF_LG_VARIABLE_L1(force) : FF_LG_VARIABLE_L2(force));
             }
         }
         ret = 1;
@@ -482,14 +474,9 @@ int ff_lg_convert_force(uint8_t caps, uint8_t slot_index, const s_ff_lg_command 
         ret = 1;
         break;
     default:
-        //TODO MLA: other force types
-        {
-            static int warned[0x0F] = {};
-            if (force->force_type < sizeof(warned) / sizeof(*warned) && warned[force->force_type] == 0) {
-                gwarn("unsupported force type: %s\n", ff_lg_get_ftype_name(force->force_type));
-                warned[force->force_type] = 1;
-            }
-        }
+        to->type = E_DATA_TYPE_LOGITECH_RAW;
+        to->playing = playing != 0;
+        ret = 1;
         break;
     }
 

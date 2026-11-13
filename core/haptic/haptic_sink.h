@@ -41,6 +41,7 @@ typedef enum {
     slot_constant,
     slot_spring,
     slot_damper,
+    slot_force_4,
     slot_leds,
     slot_range,
     // << add new slots here
