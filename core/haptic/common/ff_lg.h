@@ -283,8 +283,10 @@ static inline void ff_lg_fifo_remove(s_cmd fifo[FIFO_SIZE], s_cmd cmd) {
                 dprintf(" %02x", cmd.ext);
             }
             dprintf("\n");
-            memmove(fifo + i, fifo + i + 1, (FF_LG_FSLOTS_NB - i - 1) * sizeof(*fifo));
-            memset(fifo + FF_LG_FSLOTS_NB - i - 1, 0x00, sizeof(*fifo));
+            if (i + 1 < FIFO_SIZE) {
+                memmove(fifo + i, fifo + i + 1, (FIFO_SIZE - i - 1) * sizeof(*fifo));
+            }
+            memset(fifo + FIFO_SIZE - 1, 0x00, sizeof(*fifo));
             break;
         }
     }
