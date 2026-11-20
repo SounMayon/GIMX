@@ -716,9 +716,29 @@ int usb_close(int usb_number) {
   return 1;
 }
 
-int usb_send_control(int usb_number, void * buf, unsigned int count) {
+int usb_send_control(int usb_number, void * buf, unsigned int count)
+{
+    struct usb_state * state;
 
-  return gusb_write(usb_states[usb_number].usb_device, 0x00, buf, count);
+    if (usb_number < 0 || usb_number >= MAX_CONTROLLERS)
+    {
+        return -1;
+    }
+
+    state = usb_states + usb_number;
+
+    if (state->usb_device == NULL)
+    {
+        return -1;
+    }
+
+    if (count > BUFFER_SIZE || (count > 0 && buf == NULL))
+    {
+        PRINT_ERROR_OTHER("invalid control transfer length");
+        return -1;
+    }
+
+    return gusb_write(state->usb_device, 0x00, buf, count);
 }
 
 int usb_send_interrupt_out(int usb_number, void * buf, unsigned int count) {
