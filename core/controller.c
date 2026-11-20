@@ -464,6 +464,12 @@ int adapter_get_controller(e_device_type device_type, int device_id)
 
 static int adapter_forward(int adapter, unsigned char type, unsigned char* data, unsigned char length)
 {
+
+  if (length > BUFFER_SIZE || (length > 0 && data == NULL))
+  {
+    gwarn("invalid adapter packet length: %u\n", length);
+    return -1;
+  } 
   DEBUG_PACKET(type, data, length)
   s_packet packet =
   {
@@ -569,63 +575,123 @@ static int adapter_process_packet(int adapter, s_packet* packet)
   return ret;
 }
 
-static int adapter_serial_read_cb(void * user, const void * buf, int status) {
+static int adapter_serial_read_cb(void * user, const void * buf, int status)
+{
+    int adapter = (intptr_t)user;
+    s_adapter * state = adapters + adapter;
+    int ret = 0;
+    unsigned int remaining = 0;
+    unsigned int expected;
 
-  int adapter = (intptr_t) user;
+    if (status < 0)
+    {
+        set_done();
+        return -1;
+    }
 
-  if (status < 0) {
-    // reading with no timeout
+    if (status == 0)
+    {
+        return 0;
+    }
+
+    if (state->serial.bread > sizeof(s_packet) ||
+        (unsigned int)status > sizeof(s_packet) - state->serial.bread)
+    {
+        gerror("invalid serial packet size\n");
+        ret = -1;
+        goto error;
+    }
+
+    memcpy(
+        (unsigned char *)&state->serial.packet + state->serial.bread,
+        buf,
+        (size_t)status
+    );
+
+    state->serial.bread += (unsigned int)status;
+
+    if (state->serial.bread < sizeof(s_header))
+    {
+        remaining = sizeof(s_header) - state->serial.bread;
+    }
+    else
+    {
+        if (state->serial.packet.header.length >
+            sizeof(state->serial.packet.value))
+        {
+            gerror("invalid packet length received from adapter\n");
+            ret = -1;
+            goto error;
+        }
+
+        expected = sizeof(s_header) +
+                   state->serial.packet.header.length;
+
+        if (state->serial.bread > expected)
+        {
+            gerror("serial packet contains too many bytes\n");
+            ret = -1;
+            goto error;
+        }
+
+        remaining = expected - state->serial.bread;
+    }
+
+    if (remaining == 0)
+    {
+        DEBUG_PACKET(
+            state->serial.packet.header.type,
+            state->serial.packet.value,
+            state->serial.packet.header.length
+        );
+
+        if (state->proxy.socket == NULL)
+        {
+            ret = adapter_process_packet(adapter, &state->serial.packet);
+        }
+        else
+        {
+            ret = gudp_send(
+                state->proxy.socket,
+                &state->serial.packet,
+                sizeof(state->serial.packet.header) +
+                    state->serial.packet.header.length,
+                state->proxy.remote
+            );
+        }
+
+        state->serial.bread = 0;
+
+        if (ret < 0)
+        {
+            goto error;
+        }
+
+        if (gserial_set_read_size(
+                state->serial.device,
+                sizeof(s_header)) < 0)
+        {
+            ret = -1;
+            goto error;
+        }
+    }
+    else
+    {
+        if (gserial_set_read_size(
+                state->serial.device,
+                remaining) < 0)
+        {
+            ret = -1;
+            goto error;
+        }
+    }
+
+    return 0;
+
+error:
+    state->serial.bread = 0;
     set_done();
     return -1;
-  }
-
-  int ret = 0;
-  
-  if(adapters[adapter].serial.bread + status < sizeof(s_packet)) {
-    memcpy((unsigned char *)&adapters[adapter].serial.packet + adapters[adapter].serial.bread, buf, status);
-    adapters[adapter].serial.bread += status;
-    unsigned int remaining;
-    if(adapters[adapter].serial.bread < sizeof(s_header))
-    {
-      remaining = sizeof(s_header) - adapters[adapter].serial.bread;
-    }
-    else
-    {
-      remaining = adapters[adapter].serial.packet.header.length - (adapters[adapter].serial.bread - sizeof(s_header));
-    }
-    if(remaining == 0)
-    {
-      DEBUG_PACKET(adapters[adapter].serial.packet.header.type, adapters[adapter].serial.packet.value, adapters[adapter].serial.packet.header.length);
-
-      if (adapters[adapter].proxy.socket == NULL)
-      {
-        ret = adapter_process_packet(adapter, &adapters[adapter].serial.packet);
-      }
-      else
-      {
-        ret = gudp_send(adapters[adapter].proxy.socket, &adapters[adapter].serial.packet,
-                sizeof(adapters[adapter].serial.packet.header) + adapters[adapter].serial.packet.header.length,
-                adapters[adapter].proxy.remote);
-      }
-      adapters[adapter].serial.bread = 0;
-      gserial_set_read_size(adapters[adapter].serial.device, sizeof(s_header));
-    }
-    else
-    {
-      gserial_set_read_size(adapters[adapter].serial.device, remaining);
-    }
-  }
-  else
-  {
-    // this is a critical error (no possible recovering)
-    gerror("%s:%d %s: invalid data size (count=%u, available=%zu)\n", __FILE__, __LINE__, __func__, status, sizeof(s_packet) - adapters[adapter].serial.bread);
-    ret = -1;
-  }
-  if (ret < 0)
-  {
-    set_done();
-  }
-  return ret;
 }
 
 static int adapter_serial_write_cb(void * user __attribute__((unused)), int transfered)
@@ -676,45 +742,89 @@ static int adapter_read_timeout(int adapter, unsigned char* buf, unsigned int bu
 
 int adapter_read_reply(int adapter, s_packet * packet, int permissive)
 {
-  uint8_t type = packet->header.type;
+    uint8_t type = packet->header.type;
 
-  /*
-   * The adapter may send a packet before it processes the command,
-   * so it is possible to receive a packet that is not the command response.
-   */
-  while(1)
-  {
-    int ret = adapter_read_timeout(adapter, (void *) &packet->header, sizeof(packet), sizeof(packet->header), ADAPTER_TIMEOUT);
-    if(ret < 0 || (size_t)ret < sizeof(packet->header))
+    /*
+     * The adapter may send a packet before it processes the command.
+     * Ignore packets that are not the command response.
+     */
+    while (1)
     {
-      if (!permissive)
-      {
-        gerror("failed to read packet header from the GIMX adapter\n");
-      }
-      return -1;
-    }
+        int ret = adapter_read_timeout(
+            adapter,
+            (void *)&packet->header,
+            sizeof(*packet),
+            sizeof(packet->header),
+            ADAPTER_TIMEOUT
+        );
 
-    if (ret == sizeof(packet->header))
-    {
-      ret = adapter_read_timeout(adapter, (void *) &packet->value, sizeof(packet), packet->header.length, ADAPTER_TIMEOUT);
-      if(ret < 0 || (size_t)ret < packet->header.length)
-      {
-        if (!permissive)
+        if (ret < 0 || (size_t)ret < sizeof(packet->header))
         {
-          gerror("failed to read packet data from the GIMX adapter\n");
+            if (!permissive)
+            {
+                gerror("failed to read packet header from the GIMX adapter\n");
+            }
+
+            return -1;
         }
-        return -1;
-      }
+
+        /* Validate the announced length before reading the payload. */
+        if (packet->header.length > sizeof(packet->value))
+        {
+            if (!permissive)
+            {
+                gerror("invalid packet length from the GIMX adapter\n");
+            }
+
+            return -1;
+        }
+
+        if (ret == sizeof(packet->header))
+        {
+            if (packet->header.length > 0)
+            {
+                ret = adapter_read_timeout(
+                    adapter,
+                    packet->value,
+                    sizeof(packet->value),
+                    packet->header.length,
+                    ADAPTER_TIMEOUT
+                );
+
+                if (ret < 0 || (size_t)ret != packet->header.length)
+                {
+                    if (!permissive)
+                    {
+                        gerror("failed to read packet data from the GIMX adapter\n");
+                    }
+
+                    return -1;
+                }
+            }
+        }
+        else
+        {
+            /*
+             * Datagram/proxy path: header and payload may arrive together.
+             */
+            if ((size_t)ret != sizeof(packet->header) + packet->header.length)
+            {
+                if (!permissive)
+                {
+                    gerror("invalid packet size from the GIMX adapter\n");
+                }
+
+                return -1;
+            }
+        }
+
+        if (packet->header.type == type)
+        {
+            return 0;
+        }
     }
 
-    //Check this packet is the command response.
-    if(packet->header.type == type)
-    {
-      return 0;
-    }
-  }
-
-  return -1;
+    return -1;
 }
 
 static int adapter_write_timeout(int adapter, s_packet* packet)
