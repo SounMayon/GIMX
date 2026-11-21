@@ -53,7 +53,7 @@ LDLIBS += `ncursesw6-config --libs`
 endif
 else
 CFLAGS += -DPDCURSES
-LDLIBS += -lpdcursesw
+LDLIBS += -lpdcurses
 endif
 
 ifneq ($(OS),Windows_NT)

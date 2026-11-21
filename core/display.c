@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #ifdef PDCURSES
-#include <cursesw.h>
+#include <pdcurses/curses.h>
 #else
 #include <ncursesw/ncurses.h>
 #endif

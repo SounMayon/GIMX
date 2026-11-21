@@ -6,19 +6,19 @@
 	url = https://github.com/matlo/gimxpoll.git
 [submodule "shared/gimxprio"]
 	path = shared/gimxprio
-	url = https://github.com/matlo/gimxprio.git
+	url = https://github.com/SounMayon/gimxprio.git
 [submodule "shared/gimxusb"]
 	path = shared/gimxusb
-	url = https://github.com/matlo/gimxusb.git
+	url = https://github.com/SounMayon/gimxusb.git
 [submodule "shared/gimxhid"]
 	path = shared/gimxhid
-	url = https://github.com/matlo/gimxhid.git
+	url = https://github.com/SounMayon/gimxhid.git
 [submodule "shared/gimxinput"]
 	path = shared/gimxinput
-	url = https://github.com/matlo/gimxinput.git
+	url = https://github.com/SounMayon/gimxinput.git
 [submodule "shared/gimxserial"]
 	path = shared/gimxserial
-	url = https://github.com/matlo/gimxserial.git
+	url = https://github.com/SounMayon/gimxserial.git
 [submodule "shared/gimxtimer"]
 	path = shared/gimxtimer
 	url = https://github.com/matlo/gimxtimer.git
@@ -39,7 +39,7 @@
 	url = https://github.com/matlo/gimxfile.git
 [submodule "shared/gimxtime"]
 	path = shared/gimxtime
-	url = https://github.com/matlo/gimxtime.git
+	url = https://github.com/SounMayon/gimxtime.git
 [submodule "shared/gimxudp"]
 	path = shared/gimxudp
 	url = https://github.com/matlo/gimxudp.git

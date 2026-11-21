@@ -26,14 +26,21 @@ $(CLEANDIRS):
 	$(MAKE) -C $(@:clean-%=%) clean
 
 ifeq ($(OS),Windows_NT)
-DLLS = $(shell ntldd -R {core,config,fpsconfig,launcher}/*.exe | grep mingw | sed "s/.*=> //g" | cut -d' ' -f 1 | sed 's/\\/\\\\/g' | xargs cygpath -u | sort | uniq)\
-	   $(shell ntldd -R shared/*/*.dll | grep mingw | sed "s/.*=> //g" | cut -d' ' -f 1 | sed 's/\\/\\\\/g' | xargs cygpath -u | sort | uniq)
+DLLS =$(shell ntldd -R {core,config,fpsconfig,launcher,loader}/*.exe | grep -F 'C:\msys64\ucrt64\bin\' | sed "s/.*=> //g" | cut -d' ' -f 1 | sed 's/\\/\\\\/g' | xargs cygpath -u | sort | uniq)\
+	$(shell ntldd -R shared/*/*.dll | grep -F 'C:\msys64\ucrt64\bin\' | sed "s/.*=> //g" | cut -d' ' -f 1 | sed 's/\\/\\\\/g' | xargs cygpath -u | sort | uniq)
 install: all
 	mkdir -p setup
 	for DLL in $(DLLS); \
     do \
 	  cp -u -f $$DLL setup; \
     done
+	# DLL chargees dynamiquement par l'outil de flash
+	cp -f /ucrt64/bin/libserialport-0.dll setup
+	cp -f /ucrt64/bin/libhidapi-0.dll setup
+	cp -f /ucrt64/bin/libreadline8.dll setup
+	cp -f /ucrt64/bin/libftdi1.dll setup
+	cp -f /ucrt64/bin/libtermcap-0.dll setup
+	cp -f /ucrt64/bin/libusb-0-1-4.dll setup
 	cp -u -f core/gimx setup/gimx.exe
 	cp -u -f config/gimx-config setup/gimx-config.exe
 	cp -u -f launcher/gimx-launcher setup/gimx-launcher.exe
@@ -55,12 +62,15 @@ install: all
   do \
     cp -u -f $$fw setup/firmware; \
   done
-ifeq ($(MSYSTEM),MINGW64)
-	cp -u -f /mingw64/bin/avrdude.exe setup
-	cp -u -f /mingw64/bin/avrdude.conf setup
+ifeq ($(MSYSTEM),UCRT64)
+	cp -f /ucrt64/bin/avrdude.exe setup
+	cp -f /ucrt64/etc/avrdude.conf setup
+else ifeq ($(MSYSTEM),MINGW64)
+	cp -f /mingw64/bin/avrdude.exe setup
+	cp -f /mingw64/bin/avrdude.conf setup
 else
-	cp -u -f /mingw32/bin/avrdude.exe setup
-	cp -u -f /mingw32/bin/avrdude.conf setup
+	cp -f /mingw32/bin/avrdude.exe setup
+	cp -f /mingw32/bin/avrdude.conf setup
 endif
 
 .PHONY: subdirs $(DIRS)

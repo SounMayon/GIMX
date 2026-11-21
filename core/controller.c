@@ -28,7 +28,7 @@
 #include <haptic/haptic_core.h>
 
 #define DEFAULT_BAUDRATE 500000 //bps
-static const int baudrates[] = { 2000000, 1000000, DEFAULT_BAUDRATE }; //bps
+static const int baudrates[] = { 1000000, DEFAULT_BAUDRATE }; //bps
 #define ADAPTER_TIMEOUT 1000 //millisecond
 /*
  * The adapter restarts about 15ms after receiving the reset command.

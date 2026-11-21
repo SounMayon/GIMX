@@ -7,6 +7,10 @@ endif
 
 NAME=$(shell basename "$(shell pwd)")
 
+ifeq ($(OS),Windows_NT)
+LDFLAGS += -mwindows
+endif
+
 CPPFLAGS += `wx-config --cflags` -Winvalid-pch -include wx_pch.h -DWX_PRECOMP -Wno-cast-function-type -Wno-deprecated-copy -Wno-ignored-qualifiers
 LDLIBS += `wx-config --libs` -lstdc++ -lm
 
