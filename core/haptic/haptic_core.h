@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "haptic_waveform.h"
+
 #define MAX_DATA_SIZE 64 // max size for a HID report
 
 typedef struct {
@@ -67,6 +69,8 @@ typedef struct {
     uint8_t source_slot_valid;
     uint8_t logitech_report_valid;
     uint8_t logitech_report[7]; // Logitech force report payload without the USB report ID
+    uint8_t waveform_valid; // set when the source decoded a time based effect, see waveform below
+    s_haptic_waveform waveform; // time based effect parameters (the type stays E_DATA_TYPE_LOGITECH_RAW)
 } s_haptic_core_data;
 
 typedef struct {

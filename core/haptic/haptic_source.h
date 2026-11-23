@@ -21,6 +21,8 @@ typedef struct {
     void (* clean)(struct haptic_source_state * state);
     void (* process)(struct haptic_source_state * state, size_t size, const unsigned char * data);
     int (* get)(struct haptic_source_state * state, s_haptic_core_data * data);
+    // optional: tells the source that the effect of a slot ended by itself (no STOP was received)
+    void (* ended)(struct haptic_source_state * state, unsigned int slot);
 } s_haptic_source;
 
 int haptic_source_register(s_haptic_source * source);
