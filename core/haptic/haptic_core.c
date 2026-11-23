@@ -13,6 +13,9 @@
 #include <haptic/haptic_sink.h>
 #include <haptic/haptic_source.h>
 #include <haptic/haptic_tweaks.h>
+#include <haptic/haptic_synth.h>
+#include <haptic/haptic_stats.h>
+#include <gimxtime/include/gtime.h>
 
 struct haptic_core {
     struct {
@@ -24,6 +27,10 @@ struct haptic_core {
         struct haptic_sink_state * state;
     } sink;
     s_haptic_core_tweaks tweaks;
+    s_haptic_synth synth;
+#ifdef HAPTIC_STATS
+    uint8_t report_pending; // a report was processed since the last update (diagnostics)
+#endif
     GLIST_LINK(struct haptic_core);
 };
 
@@ -59,6 +66,8 @@ struct haptic_core * haptic_core_init(s_haptic_core_ids source_ids, int sink_joy
     core->source.state = core->source.ptr->init(source_ids);
     core->sink.state = core->sink.ptr->init(sink_joystick);
 
+    haptic_synth_init(&core->synth);
+
     core->tweaks.invert = 0;
     core->tweaks.gain.rumble = 100;
     core->tweaks.gain.constant = 100;
@@ -71,6 +80,8 @@ struct haptic_core * haptic_core_init(s_haptic_core_ids source_ids, int sink_joy
 }
 
 int haptic_core_clean(struct haptic_core * core) {
+
+    HSTAT_DUMP();
 
     if (core == NULL) {
         return 0;
@@ -92,6 +103,12 @@ int haptic_core_clean(struct haptic_core * core) {
 
 void haptic_core_process_report(struct haptic_core * core, size_t size, const unsigned char * data) {
 
+#ifdef HAPTIC_STATS
+    if (core != NULL) {
+        core->report_pending = 1;
+    }
+#endif
+
     if (core != NULL && core->source.ptr != NULL) {
         core->source.ptr->process(core->source.state, size, data);
     }
@@ -103,12 +120,53 @@ void haptic_core_update(struct haptic_core * core) {
         return;
     }
 
+    int synthesis = (core->sink.ptr->caps & E_HAPTIC_SINK_CAP_SYNTHESIS) != 0;
+    uint64_t now = (uint64_t)gtime_gettime();
+
+    HSTAT_EVENT(HSTAT_CORE_UPDATE, now);
+#ifdef HAPTIC_STATS
+    if (core->report_pending) {
+        HSTAT_EVENT(HSTAT_CORE_UPDATE_REPORT, now);
+        core->report_pending = 0;
+    }
+#endif
+    HSTAT_REPORT(now);
+
     s_haptic_core_data data;
     while (core->source.ptr->get(core->source.state, &data)) {
         haptic_tweak_apply(&core->tweaks, &data);
+        if (synthesis && haptic_synth_feed(&core->synth, &data, now)) {
+            continue;
+        }
+        HSTAT_EVENT(HSTAT_SINK_PROCESS, now);
         core->sink.ptr->process(core->sink.state, &data);
     }
 
+    if (synthesis) {
+        int send = haptic_synth_step(&core->synth, now, &core->tweaks, &data);
+        HSTAT_EVENT(HSTAT_SYNTH_STEP, now);
+
+        // keep the source slots in sync with the effects that ended by themselves
+        unsigned int ended = haptic_synth_take_ended(&core->synth);
+        if (ended != 0 && core->source.ptr->ended != NULL) {
+            unsigned int slot;
+            for (slot = 0; slot < HAPTIC_SYNTH_SLOTS; ++slot) {
+                if (ended & (1U << slot)) {
+                    core->source.ptr->ended(core->source.state, slot);
+                }
+            }
+        }
+
+        if (send) {
+            HSTAT_EVENT(HSTAT_SYNTH_RESULT, now);
+            HSTAT_LEVEL(HSTAT_SYNTH_RESULT, now, data.constant.level);
+            HSTAT_EVENT(HSTAT_SINK_PROCESS, now);
+            // the constant force already includes the tweaks
+            core->sink.ptr->process(core->sink.state, &data);
+        }
+    }
+
+    HSTAT_EVENT(HSTAT_SINK_UPDATE, now);
     core->sink.ptr->update(core->sink.state);
 }
 

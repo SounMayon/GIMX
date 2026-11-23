@@ -7,6 +7,8 @@
 #include <gimxinput/include/ginput.h>
 #include <haptic/haptic_common.h>
 #include <haptic/haptic_sink.h>
+#include <haptic/haptic_stats.h>
+#include <gimxtime/include/gtime.h>
 
 struct haptic_sink_state {
     int joystick;
@@ -117,7 +119,18 @@ static void haptic_sink_os_process(struct haptic_sink_state * state, const s_hap
     }
 
     if (ret != 0) {
-        ginput_joystick_set_haptic(&event);
+#ifdef HAPTIC_STATS
+        uint64_t stat_start = (uint64_t)gtime_gettime();
+#endif
+        int set_ret = ginput_joystick_set_haptic(&event);
+#ifdef HAPTIC_STATS
+        // the call is synchronous down to SDL: its duration is the software submission time, not the reaction of the wheel
+        // GE_Event is a union: the constant force member is only read when it is the active one
+        int stat_constant = (event.type == GE_JOYCONSTANTFORCE);
+        int stat_level = stat_constant ? event.jconstant.level : 0;
+        HSTAT_SDL(stat_start, (uint64_t)gtime_gettime(), set_ret, stat_constant, stat_level);
+#endif
+        (void)set_ret; // the return value was ignored before, it is only counted by the diagnostics
         if(gimx_params.debug.haptic) {
             dump_event(&event);
         }
@@ -150,7 +163,7 @@ static s_haptic_core_ids haptic_sink_os_ids[] = {
 static s_haptic_sink sink_os = {
         .name = "haptic_sink_os",
         .ids = haptic_sink_os_ids,
-        .caps = E_HAPTIC_SINK_CAP_RUMBLE | E_HAPTIC_SINK_CAP_CONSTANT | E_HAPTIC_SINK_CAP_SPRING | E_HAPTIC_SINK_CAP_DAMPER,
+        .caps = E_HAPTIC_SINK_CAP_RUMBLE | E_HAPTIC_SINK_CAP_CONSTANT | E_HAPTIC_SINK_CAP_SPRING | E_HAPTIC_SINK_CAP_DAMPER | E_HAPTIC_SINK_CAP_SYNTHESIS,
         .init = haptic_sink_os_init,
         .clean = haptic_sink_os_clean,
         .process = haptic_sink_os_process,
