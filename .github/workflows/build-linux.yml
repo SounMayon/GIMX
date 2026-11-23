@@ -33,9 +33,5 @@ jobs:
             pkg-config --modversion "$package"
           done
           dpkg-query -W -f='${binary:Package} ${Version}\n' libbluetooth-dev libmhash-dev libxi-dev libx11-dev
-      - name: Apply downstream shared HID fix
-        run: git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
-      - name: Apply downstream shared USB fix
-        run: git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
       - name: Build
         run: make -j2
