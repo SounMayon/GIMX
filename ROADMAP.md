@@ -1,6 +1,6 @@
 # Roadmap: GIMX Reborn, PC and PS4 G29 force feedback
 
-Last updated: 2026-11-13
+Last updated: 2026-11-22
 
 ## Scope and current branches
 
@@ -30,6 +30,18 @@ Use the USB HID PID 1.0 effect set as the coverage target: constant, ramp, custo
 - Registered physical G29 PC (`046d:C24F`) and PS4 (`046d:C260`) IDs with the Logitech FFB output sink so decoded constant, spring and damper effects use its native reports; build passed in [run 43337088198](https://github.com/SounMayon/GIMX/actions/runs/43337088198).
 - Added a native-report path for timed variable and other Logitech force types the generic model cannot represent. It preserves the four source effect slots and forwards these reports to a matching physical G29; Linux build passed in [run 43337925390](https://github.com/SounMayon/GIMX/actions/runs/43337925390), and the grouped-stop follow-up passed in [run 43338022752](https://github.com/SounMayon/GIMX/actions/runs/43338022752).
 - Hardened the PS4 Logitech source path by rejecting truncated output reports before parsing and correcting FIFO removal to shift using `FIFO_SIZE` and clear the actual tail slot; Linux and Windows builds pass in [run 43342959350](https://github.com/SounMayon/GIMX/actions/runs/43342959350) and [run 43342959337](https://github.com/SounMayon/GIMX/actions/runs/43342959337).
+
+- Implemented the missing Logitech classic effects in the application haptic engine (branch `gimx-reborn-ffb`, not yet built in CI nor tested on hardware):
+  - `core/haptic/haptic_waveform.{c,h}`: pure, clock-independent evaluator for sawtooth up/down, trapezoid, rectangle, square, ramp and variable forces, computed from the elapsed time (Logitech main loop assumed to be 2 ms).
+  - `core/haptic/haptic_synth.{c,h}` and `haptic_core_update()`: sinks flagged `E_HAPTIC_SINK_CAP_SYNTHESIS` (the generic OS/SDL sink) get these effects synthesized as one constant force, summed with the constant forces of the four slots and with gain/invert tweaks applied. Other sinks are unchanged, and a physical G29 still receives the native report.
+  - `ff_lg_convert_force()`: auto-center spring (0x03) is converted to a spring and friction (0x0e) to a damper (approximations); waveform types stay `E_DATA_TYPE_LOGITECH_RAW` and carry the decoded parameters.
+  - Unit tests: `make -C core/test/haptic test` (analytic expectations, no hardware needed; the current coverage is described in the review follow-up below).
+  - Hypotheses to confirm on hardware or with captures: rectangle phase P semantics, square wave starting in the high state, sawtooth wrap-around span, ramp stopping at the target. Not covered: inertia (not part of the Logitech classic protocol), envelopes, effect direction, and a velocity-based friction model.
+
+- Review follow-up on the time based effects (`gimx-reborn-ffb`): a slot whose effect ended by itself (ramp target reached, finite square wave) is now reported back to the Logitech source (`s_haptic_source.ended`), so an identical `DOWNLOAD_AND_PLAY` or a `PLAY` restarts it instead of being ignored as "already playing". Tests now cover this lifecycle with the real Logitech source, the first wrap-around values of both sawtooth waves, the rectangle phase (offset and out of range), variable forces 0 and 2 (and the unsupported slots 1 and 3), several simultaneous waveforms with different start times, and positive/negative saturation (71 assertions). The tests check internal consistency and the documented hypotheses, not conformity to a real G29.
+- Restitution rate of synthesized effects: the waveform clock is the Logitech main loop (2 ms), but the force is only recomputed when `haptic_core_update()` runs. It runs after each received FFB report and once per controller refresh period, which is 5 ms by default for the PS4 G29 (minimum 1000 µs, see `shared/gimxcontroller/src/g29_ps4.c`). Waveforms with a period shorter than twice the refresh period are therefore aliased, and a fast square wave can be missed. Next step: measure the real send rate to the SDL sink and decide whether to average the waveform over the elapsed interval or to require a smaller refresh period.
+
+- Rate diagnostics (`gimx-reborn-ffb`): `core/haptic/haptic_stats.{c,h}` and `make HAPTIC_STATS=1` instrument the whole path (core update, synth step/result, `sink->process`, `sink->update`, `ginput_joystick_set_haptic()` with its duration and return value) with histograms (power of two buckets above 51.2 ms) and rings of requested / attempted / accepted transitions, nothing logged per event. Without `HAPTIC_STATS` the module is not built and the core has no diagnostic field. The OS sink `update()` is a no-op and all SDL work is synchronous inside `process()`; the return value of `ginput_joystick_set_haptic()` used to be ignored. Protocol and report template: `doc/FFB_rate_measurement.md`. `core/test/haptic/haptic_rate_sim` is a computation level prediction only (real synthesizer, simulated ticks, mock sink): at a 5 ms tick a square wave keeps 100 % of its transitions from a 6 ms half period, about 60 % at 4 ms and about 20 % at 2 ms; at 2 ms and 1 ms ticks all are delivered. Real SDL/OS rates still have to be measured on hardware before changing the synthesizer rate.
 
 ### In progress
 

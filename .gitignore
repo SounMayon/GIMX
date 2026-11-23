@@ -60,3 +60,6 @@ loader/gimx-loader
 
 # Generated Windows installer files
 /setup/
+core/test/haptic/haptic_waveform_test
+core/test/haptic/haptic_stats_test
+core/test/haptic/haptic_rate_sim
