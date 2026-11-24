@@ -2,7 +2,7 @@ name: Windows build
 
 on:
   push:
-    branches: branches: [GIMX-Reborn, gimx-reborn-ffb]
+    branches: [GIMX-Reborn]
   pull_request:
     branches: [GIMX-Reborn]
   workflow_dispatch:
