@@ -218,6 +218,7 @@ const long configFrame::ID_MENUITEMJS = wxNewId();
 const long configFrame::ID_MENUITEMT300RSPS4 = wxNewId();
 const long configFrame::ID_MENUITEMG27PS3 = wxNewId();
 const long configFrame::ID_MENUITEMG29PS4 = wxNewId();
+const long configFrame::ID_MENUITEMG29PC = wxNewId();
 const long configFrame::ID_MENUITEMDFPS2 = wxNewId();
 const long configFrame::ID_MENUITEMDFPPS2 = wxNewId();
 const long configFrame::ID_MENUITEMGTFPS2 = wxNewId();
@@ -1326,6 +1327,8 @@ configFrame::configFrame(wxString file,wxWindow* parent, wxWindowID id __attribu
     MenuType->Append(MenuItemG27Ps3);
     MenuItemG29Ps4 = new wxMenuItem(MenuType, ID_MENUITEMG29PS4, _("G29 PS4"), wxEmptyString, wxITEM_RADIO);
     MenuType->Append(MenuItemG29Ps4);
+    MenuItemG29Pc = new wxMenuItem(MenuType, ID_MENUITEMG29PC, _("G29 PC"), wxEmptyString, wxITEM_RADIO);
+    MenuType->Append(MenuItemG29Pc);
     MenuItemDfPs2 = new wxMenuItem(MenuType, ID_MENUITEMDFPS2, _("Driving Force PS2"), wxEmptyString, wxITEM_RADIO);
     MenuType->Append(MenuItemDfPs2);
     MenuItemDfpPs2 = new wxMenuItem(MenuType, ID_MENUITEMDFPPS2, _("Driving Force Pro PS2"), wxEmptyString, wxITEM_RADIO);
@@ -1453,6 +1456,7 @@ configFrame::configFrame(wxString file,wxWindow* parent, wxWindowID id __attribu
     Connect(ID_MENUITEMT300RSPS4,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&configFrame::OnMenuTypeItemSelected);
     Connect(ID_MENUITEMG27PS3,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&configFrame::OnMenuTypeItemSelected);
     Connect(ID_MENUITEMG29PS4,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&configFrame::OnMenuTypeItemSelected);
+    Connect(ID_MENUITEMG29PC,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&configFrame::OnMenuTypeItemSelected);
     Connect(ID_MENUITEMDFPS2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&configFrame::OnMenuTypeItemSelected);
     Connect(ID_MENUITEMDFPPS2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&configFrame::OnMenuTypeItemSelected);
     Connect(ID_MENUITEMGTFPS2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&configFrame::OnMenuTypeItemSelected);
@@ -2423,6 +2427,9 @@ void configFrame::LoadControllerType()
       break;
     case C_TYPE_G29_PS4:
       MenuType->Check(ID_MENUITEMG29PS4, true);
+      break;
+    case C_TYPE_G29_PC:
+      MenuType->Check(ID_MENUITEMG29PC, true);
       break;
     case C_TYPE_DF_PS2:
       MenuType->Check(ID_MENUITEMDFPS2, true);
@@ -4399,6 +4406,10 @@ void configFrame::OnMenuTypeItemSelected(wxCommandEvent& event __attribute__((un
   else if(MenuItemG29Ps4->IsChecked())
   {
     newType = C_TYPE_G29_PS4;
+  }
+  else if(MenuItemG29Pc->IsChecked())
+  {
+    newType = C_TYPE_G29_PC;
   }
   else if(MenuItemDfPs2->IsChecked())
   {
