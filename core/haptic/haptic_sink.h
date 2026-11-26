@@ -21,6 +21,7 @@ typedef enum {
     E_HAPTIC_SINK_CAP_CONSTANT = (1 << 1),
     E_HAPTIC_SINK_CAP_SPRING = (1 << 2),
     E_HAPTIC_SINK_CAP_DAMPER = (1 << 3),
+    E_HAPTIC_SINK_CAP_SYNTHESIS = (1 << 4), // the sink has no native time based effects: the core synthesizes them as a constant force
 } e_haptic_sink_caps;
 
 typedef struct {

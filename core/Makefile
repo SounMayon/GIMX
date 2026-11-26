@@ -71,10 +71,19 @@ OBJECTS += $(patsubst %.c,%.o,$(wildcard connectors/bluetooth/btstack/src/*.c))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard connectors/*.c))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard connectors/gpp/*.c))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard connectors/report2event/*.c))
+# make HAPTIC_STATS=1 : instrument the force feedback path (rates, SDL latency), see core/haptic/haptic_stats.h
+ifneq ($(HAPTIC_STATS),)
+CFLAGS += -DHAPTIC_STATS
+endif
+
 OBJECTS += $(patsubst %.c,%.o,$(wildcard haptic/*.c))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard haptic/source/*.c))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard haptic/sink/*.c))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard haptic/common/*.c))
+ifeq ($(HAPTIC_STATS),)
+# no diagnostics: haptic_stats.c is not part of the build (the unit tests build it on their own)
+OBJECTS:=$(filter-out haptic/haptic_stats.o,$(OBJECTS))
+endif
 ifneq ($(OS),Windows_NT)
 OBJECTS += $(patsubst %.c,%.o,$(wildcard system/linux/*.c))
 OBJECTS += $(patsubst %.c,%.o,$(wildcard connectors/linux/*/*.c))

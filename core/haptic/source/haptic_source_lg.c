@@ -275,6 +275,15 @@ static int haptic_source_lg_get(struct haptic_source_state * state, s_haptic_cor
     return 0;
 }
 
+static void haptic_source_lg_ended(struct haptic_source_state * state, unsigned int slot) {
+
+    if (slot < FF_LG_FSLOTS_NB) {
+        // the effect is over: an identical DOWNLOAD_AND_PLAY or a PLAY has to start it again
+        state->forces[slot].playing = 0;
+        state->forces[slot].updated = 0;
+    }
+}
+
 static s_haptic_core_ids haptic_source_lg_ids[] = {
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_FORMULA_FORCE_GP  },
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_DRIVING_FORCE     },
@@ -283,6 +292,7 @@ static s_haptic_core_ids haptic_source_lg_ids[] = {
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_G25_WHEEL         },
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_DFGT_WHEEL        },
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_G27_WHEEL         },
+        { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_G29_PC_WHEEL      },
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_MOMO_WHEEL2       },
         { .vid = USB_VENDOR_ID_LOGITECH,  .pid = USB_PRODUCT_ID_LOGITECH_G29_PS4_WHEEL     },
         { .vid = 0x0000,      .pid = 0x0000       }, // end of table
@@ -294,7 +304,8 @@ static s_haptic_source source_lg = {
         .init = haptic_source_lg_init,
         .clean = haptic_source_lg_clean,
         .process = haptic_source_lg_process,
-        .get = haptic_source_lg_get
+        .get = haptic_source_lg_get,
+        .ended = haptic_source_lg_ended
 };
 
 void haptic_source_lg_constructor(void) __attribute__((constructor));

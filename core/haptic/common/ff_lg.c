@@ -376,6 +376,72 @@ void ff_lg_decode_command(const unsigned char data[FF_LG_OUTPUT_REPORT_SIZE]) {
     dprintf("\n");
 }
 
+// decode the time based Logitech classic forces, see chapter 3.2 of the Logitech protocol specification
+static void ff_lg_decode_waveform(uint8_t slot_index, const s_ff_lg_command * force, s_haptic_waveform * wf) {
+
+    const unsigned char * p = force->parameters;
+    memset(wf, 0x00, sizeof(*wf));
+    switch (force->force_type) {
+    case FF_LG_FTYPE_SAWTOOTH_UP:
+    case FF_LG_FTYPE_SAWTOOTH_DOWN:
+        wf->kind = (force->force_type == FF_LG_FTYPE_SAWTOOTH_UP) ? E_WAVEFORM_SAWTOOTH_UP : E_WAVEFORM_SAWTOOTH_DOWN;
+        wf->l1 = p[0];
+        wf->l2 = p[1];
+        wf->l0 = p[2];
+        wf->t3 = p[4] >> 4;
+        wf->step = p[4] & 0x0f;
+        break;
+    case FF_LG_FTYPE_TRAPEZOID:
+        wf->kind = E_WAVEFORM_TRAPEZOID;
+        wf->l1 = p[0];
+        wf->l2 = p[1];
+        wf->t1 = p[2];
+        wf->t2 = p[3];
+        wf->t3 = p[4] >> 4;
+        wf->step = p[4] & 0x0f;
+        break;
+    case FF_LG_FTYPE_RECTANGLE:
+        wf->kind = E_WAVEFORM_RECTANGLE;
+        wf->l1 = p[0];
+        wf->l2 = p[1];
+        wf->t1 = p[2];
+        wf->t2 = p[3];
+        wf->phase = p[4];
+        break;
+    case FF_LG_FTYPE_SQUARE_WAVE:
+        wf->kind = E_WAVEFORM_SQUARE;
+        wf->amplitude = p[0];
+        wf->half_period = (uint16_t)(p[1] | (p[2] << 8));
+        wf->periods = p[3];
+        break;
+    case FF_LG_FTYPE_RAMP:
+        wf->kind = E_WAVEFORM_RAMP;
+        wf->l1 = p[0];
+        wf->l2 = p[1];
+        wf->direction = p[2] & 0x01;
+        wf->t3 = p[3] >> 4;
+        wf->step = p[3] & 0x0f;
+        break;
+    case FF_LG_FTYPE_VARIABLE:
+        // only forces 0 and 2 are defined for this type
+        wf->kind = E_WAVEFORM_VARIABLE;
+        if (slot_index == 2) {
+            wf->l1 = p[1];
+            wf->t3 = p[3] >> 4;
+            wf->step = p[3] & 0x0f;
+            wf->direction = (p[4] >> 4) & 0x01;
+        } else {
+            wf->l1 = p[0];
+            wf->t3 = p[2] >> 4;
+            wf->step = p[2] & 0x0f;
+            wf->direction = p[4] & 0x01;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 int ff_lg_convert_force(uint8_t caps, uint8_t slot_index, const s_ff_lg_command * force, uint8_t playing, s_haptic_core_data * to) {
 
     int ret = 0;
@@ -403,6 +469,10 @@ int ff_lg_convert_force(uint8_t caps, uint8_t slot_index, const s_ff_lg_command 
             (slot_index != 0 && slot_index != 2)) {
             to->type = E_DATA_TYPE_LOGITECH_RAW;
             to->playing = playing != 0;
+            if (slot_index == 0 || slot_index == 2) {
+                ff_lg_decode_waveform(slot_index, force, &to->waveform);
+                to->waveform_valid = 1;
+            }
         } else {
             to->type = E_DATA_TYPE_CONSTANT;
             if (playing) {
@@ -471,6 +541,45 @@ int ff_lg_convert_force(uint8_t caps, uint8_t slot_index, const s_ff_lg_command 
             to->damper.center = 0;
             to->damper.deadband = 0;
         }
+        ret = 1;
+        break;
+    case FF_LG_FTYPE_AUTO_CENTER_SPRING:
+        // approximated by a spring centered on the wheel with a 2 counts wide dead band
+        to->type = E_DATA_TYPE_SPRING;
+        if (playing) {
+            to->playing = 1;
+            to->spring.saturation.left = ff_lg_u8_to_u16(force->parameters[2]);
+            to->spring.saturation.right = ff_lg_u8_to_u16(force->parameters[2]);
+            to->spring.coefficient.left = ff_lg_get_condition_coef(caps & FF_LG_CAPS_OLD_LOW_RES_COEF, force->parameters[0] & 0x07, 0);
+            to->spring.coefficient.right = ff_lg_get_condition_coef(caps & FF_LG_CAPS_OLD_LOW_RES_COEF, force->parameters[1] & 0x07, 0);
+            to->spring.center = 0;
+            to->spring.deadband = ff_lg_u8_to_u16(2);
+        }
+        ret = 1;
+        break;
+    case FF_LG_FTYPE_FRICTION:
+        // approximated by a damper: coefficients K1/K2 (8 bits), saturation CLIP, inversions S1/S2
+        to->type = E_DATA_TYPE_DAMPER;
+        if (playing) {
+            to->playing = 1;
+            to->damper.saturation.left = ff_lg_u8_to_u16(force->parameters[2]);
+            to->damper.saturation.right = ff_lg_u8_to_u16(force->parameters[2]);
+            to->damper.coefficient.left = (force->parameters[3] & 0x01 ? -1 : 1) * (force->parameters[0] * SHRT_MAX / UCHAR_MAX);
+            to->damper.coefficient.right = (force->parameters[3] & 0x10 ? -1 : 1) * (force->parameters[1] * SHRT_MAX / UCHAR_MAX);
+        }
+        ret = 1;
+        break;
+    case FF_LG_FTYPE_SAWTOOTH_UP:
+    case FF_LG_FTYPE_SAWTOOTH_DOWN:
+    case FF_LG_FTYPE_TRAPEZOID:
+    case FF_LG_FTYPE_RECTANGLE:
+    case FF_LG_FTYPE_SQUARE_WAVE:
+    case FF_LG_FTYPE_RAMP:
+        // the type stays RAW so that a physical G29 gets the native report; other outputs use the decoded waveform
+        to->type = E_DATA_TYPE_LOGITECH_RAW;
+        to->playing = playing != 0;
+        ff_lg_decode_waveform(slot_index, force, &to->waveform);
+        to->waveform_valid = 1;
         ret = 1;
         break;
     default:

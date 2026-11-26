@@ -19,6 +19,7 @@
 #include "df_ps2.h"
 #include "dfp_ps2.h"
 #include "gtf_ps2.h"
+#include "g29_pc.h"
 
 #define MAX_REPORTS 2
 
@@ -37,6 +38,7 @@ typedef union
   s_report_dfPs2 dfPs2;
   s_report_dfpPs2 dfpPs2;
   s_report_gtfPs2 gtfPs2;
+  s_report_g29Pc g29Pc;
 } s_report;
 
 typedef struct GIMX_PACKED
