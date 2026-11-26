@@ -52,3 +52,5 @@ jobs:
         run: make clean
       - name: Build
         run: make -j2
+      - name: Run haptic unit tests
+        run: make -C core/test/haptic test

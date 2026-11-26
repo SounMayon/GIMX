@@ -85,15 +85,22 @@ static int16_t eval_trapezoid(const s_haptic_waveform * wf, uint64_t loops) {
     return level_to_s16(l1 > l2 ? l2 + moved : l2 - moved);
 }
 
-static int16_t eval_rectangle(const s_haptic_waveform * wf, uint64_t loops) {
-
-    uint64_t period = (uint64_t)wf->t1 + wf->t2;
+static int16_t eval_rectangle(const s_haptic_waveform *wf, uint64_t loops)
+{
+    uint32_t period = (uint32_t)wf->t1 + (uint32_t)wf->t2;
     if (period == 0) {
         return level_to_s16(wf->l1);
     }
-    // hypothesis to confirm on hardware: the phase is an offset of 2*P loops in the period, ignored if P > T1 + T2
-    uint64_t offset = (wf->phase > period) ? 0 : (uint64_t)wf->phase * 2;
-    uint64_t p = (loops + offset) % period;
+
+    uint64_t offset = 0;
+    if (wf->phase <= period) {
+        offset = (uint64_t)wf->phase * 2ULL;
+        if (offset >= period) {
+            offset = wf->t1;
+        }
+    }
+
+    uint32_t p = (uint32_t)((loops + offset) % period);
     return level_to_s16(p < wf->t1 ? wf->l1 : wf->l2);
 }
 

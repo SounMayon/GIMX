@@ -14,8 +14,6 @@ sudo apt-get install --yes \
 git submodule update --init --recursive
 
 # Apply the branch-maintained fixes to the pinned shared submodules.
-git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
-git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
 
 make -j2
 ```
@@ -33,12 +31,13 @@ Use the current UCRT64 environment. Install the build tools and libraries, then 
 
 Apply the maintained shared-submodule fixes, then compile:
 
-    git -C shared/gimxhid apply ../../patches/gimxhid-pollfds-use-after-free.patch
-    git -C shared/gimxusb apply ../../patches/gimxusb-pollfds-use-after-free.patch
-    git -C shared/gimxprio apply ../../patches/gimxprio-pointer-format.patch
-    git -C shared/gimxtime apply ../../patches/gimxtime-standard-printf.patch
-    git -C shared/gimxinput apply ../../patches/gimxinput-sdl2-steering-axis.patch
     make clean
     make -j2
 
 The GitHub Actions workflow uses the same UCRT64 packages and builds the complete application. It does not package an installer.
+
+## Haptic Unit Tests
+
+```sh
+make -C core/test/haptic test
+```

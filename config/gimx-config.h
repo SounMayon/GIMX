@@ -311,6 +311,7 @@ class configFrame: public wxFrame
         static const long ID_MENUITEMT300RSPS4;
         static const long ID_MENUITEMG27PS3;
         static const long ID_MENUITEMG29PS4;
+        static const long ID_MENUITEMG29PC;
         static const long ID_MENUITEMDFPS2;
         static const long ID_MENUITEMDFPPS2;
         static const long ID_MENUITEMGTFPS2;
@@ -400,6 +401,7 @@ class configFrame: public wxFrame
         wxMenuItem* MenuItemDfpPs2;
         wxMenuItem* MenuItemG27Ps3;
         wxMenuItem* MenuItemG29Ps4;
+        wxMenuItem* MenuItemG29Pc;
         wxMenuItem* MenuItemGtfPs2;
         wxMenuItem* MenuItemJs;
         wxMenuItem* MenuItemLinkControls;

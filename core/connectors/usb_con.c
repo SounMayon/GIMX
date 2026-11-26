@@ -765,6 +765,7 @@ int usb_forward_output(int usb_number, int joystick) {
   case C_TYPE_DF_PS2:
   case C_TYPE_DFP_PS2:
   case C_TYPE_GTF_PS2:
+  case C_TYPE_G29_PC:
   case C_TYPE_NONE:
       break;
   }

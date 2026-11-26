@@ -35,3 +35,5 @@ jobs:
           dpkg-query -W -f='${binary:Package} ${Version}\n' libbluetooth-dev libmhash-dev libxi-dev libx11-dev
       - name: Build
         run: make -j2
+      - name: Run haptic unit tests
+        run: make -C core/test/haptic test
